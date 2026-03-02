@@ -938,11 +938,6 @@
         // Secondary App for Admin User Creation without logging out
         const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryApp");
 
-        // Enable offline persistence
-        db.enablePersistence().catch((err) => {
-            console.error("Firebase persistence error:", err.code);
-        });
-
         // Store current user state
         let currentUser = null;
         let isAdmin = false;
