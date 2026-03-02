@@ -2230,6 +2230,12 @@
                 setTimeout(() => dismissToast(t), 3000);
             }
             return t;
+        }
+
+        function dismissToast(toastEl) {
+            if (!toastEl) return;
+            toastEl.classList.remove('toast-enter');
+            toastEl.classList.add('toast-leave');
             setTimeout(() => toastEl.remove(), 300);
         }
 
