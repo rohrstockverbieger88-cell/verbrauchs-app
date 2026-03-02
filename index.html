@@ -1,0 +1,2295 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verbrauchsüberwachung</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gray: {
+                            850: '#1f2937',
+                            900: '#111827',
+                            950: '#030712',
+                        },
+                        primary: {
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Tesseract.js for OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+    <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <!-- Add Firebase products that you want to use -->
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #111827;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+
+        .slide-up {
+            animation: slideUp 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .toast-enter {
+            animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .toast-leave {
+            animation: toastOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes toastIn {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes toastOut {
+            from {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col antialiased">
+    <!-- Initial Loading State -->
+    <div id="authLoadingView" class="flex flex-col items-center justify-center min-h-screen">
+        <i data-lucide="loader-2" class="w-10 h-10 text-primary-500 animate-spin mb-4"></i>
+        <p class="text-gray-400 font-medium">Verbinde mit Datenbank...</p>
+    </div>
+
+    <!-- Login View -->
+    <div id="loginView" class="hidden flex-col items-center justify-center min-h-screen p-4 fade-in">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+            <div class="flex items-center gap-3 justify-center mb-6">
+                <i data-lucide="activity" class="text-primary-500 w-8 h-8"></i>
+                <span class="font-bold text-2xl tracking-tight text-white">Verbrauch</span>
+            </div>
+            <h2 class="text-xl font-bold text-center mb-6">Anmelden</h2>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">E-Mail</label>
+                    <input type="email" id="loginEmail" required
+                        class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Passwort</label>
+                    <input type="password" id="loginPassword" required
+                        class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
+                </div>
+                <button type="submit"
+                    class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-3 rounded-lg flex justify-center items-center gap-2 shadow-lg hover:shadow-primary-500/20 transition-all">
+                    <span>Anmelden</span>
+                    <i data-lucide="log-in" class="w-4 h-4"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Setup View -->
+    <div id="adminSetupView" class="hidden flex-col items-center justify-center min-h-screen p-4 fade-in">
+        <div
+            class="bg-gray-900 border border-primary-500/30 rounded-2xl p-8 w-full max-w-md shadow-2xl shadow-primary-500/10">
+            <div class="flex items-center gap-3 justify-center mb-6">
+                <i data-lucide="shield-alert" class="text-primary-500 w-10 h-10"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-center text-white mb-2">Ersteinrichtung</h2>
+            <p class="text-gray-400 text-sm text-center mb-6">Bitte vergeben Sie ein Passwort für den ersten
+                Administrator-Account.</p>
+            <form id="adminSetupForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Admin E-Mail</label>
+                    <input type="email" id="adminSetupEmail" value="admin" required
+                        class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors"
+                        placeholder="Geben Sie eine Admin Email ein">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Passwort vergeben</label>
+                    <input type="password" id="adminSetupPassword1" required minlength="6"
+                        class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Passwort wiederholen</label>
+                    <input type="password" id="adminSetupPassword2" required minlength="6"
+                        class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
+                </div>
+                <button type="submit"
+                    class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-3 rounded-lg shadow-lg hover:shadow-primary-500/20 transition-all mt-6 flex justify-center items-center gap-2">
+                    <span id="adminSetupBtnText">Erstellen & Anmelden</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="appContainer" class="hidden flex-col min-h-screen w-full fade-in">
+        <!-- Navbar -->
+        <nav class="bg-gray-900 border-b border-gray-800 sticky top-0 z-30">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16 items-center">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="activity" class="text-primary-500"></i>
+                        <span class="font-bold text-xl tracking-tight">Verbrauchsüberwachung</span>
+                    </div>
+                    <!-- Navbar Actions -->
+                    <div class="flex items-center gap-2" id="navActions">
+
+                        <!-- Notifications Dropdown -->
+                        <div class="relative group">
+                            <button
+                                class="relative flex items-center justify-center w-9 h-9 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+                                title="Benachrichtigungen">
+                                <i data-lucide="bell" class="w-4 h-4 text-gray-300"></i>
+                                <span id="notificationBadge"
+                                    class="hidden absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-gray-900">0</span>
+                            </button>
+                            <div
+                                class="absolute right-0 mt-2 w-72 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden flex flex-col">
+                                <div
+                                    class="px-4 py-3 border-b border-gray-800 bg-gray-800/50 flex justify-between items-center">
+                                    <span class="text-sm font-semibold text-white">Benachrichtigungen</span>
+                                </div>
+                                <div id="notificationList"
+                                    class="flex flex-col max-h-64 overflow-y-auto custom-scrollbar">
+                                    <!-- JS Injected -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dashboard Actions -->
+                        <div id="navDashboardActions" class="flex items-center gap-2">
+                            <input type="file" id="csvFileInput" accept=".csv" class="hidden">
+
+                            <!-- Options Dropdown -->
+                            <div class="relative group">
+                                <button
+                                    class="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors text-sm font-medium"
+                                    title="Optionen">
+                                    <i data-lucide="menu" class="w-4 h-4"></i><span
+                                        class="hidden sm:inline">Optionen</span>
+                                </button>
+                                <div
+                                    class="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+                                    <button onclick="openAddCategoryModal()" id="navAddBtn"
+                                        class="w-full text-left px-4 py-2 text-sm text-white hover:bg-primary-600 flex items-center gap-2 border-b border-gray-700">
+                                        <i data-lucide="plus-circle" class="w-4 h-4 whitespace-nowrap"></i> Bereich
+                                        hinzufügen
+                                    </button>
+                                    <button onclick="document.getElementById('csvFileInput').click()"
+                                        class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2">
+                                        <i data-lucide="upload" class="w-4 h-4"></i> Import (V1)
+                                    </button>
+                                    <button onclick="openExportModal()"
+                                        class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
+                                        <i data-lucide="download" class="w-4 h-4"></i> Export CSV
+                                    </button>
+                                    <button onclick="openChangePasswordModal()"
+                                        class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
+                                        <i data-lucide="key" class="w-4 h-4"></i> Passwort ändern
+                                    </button>
+                                    <button onclick="showAdminDashboard()" id="navAdminBtn"
+                                        class="hidden w-full text-left px-4 py-3 text-sm text-primary-400 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
+                                        <i data-lucide="users" class="w-4 h-4"></i> Benutzerverwaltung
+                                    </button>
+                                    <button onclick="logoutApp()"
+                                        class="w-full text-left px-4 py-3 text-sm text-red-400 hover:text-white hover:bg-red-900/50 flex items-center gap-2 border-t border-gray-700">
+                                        <i data-lucide="log-out" class="w-4 h-4"></i> Abmelden
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+
+            <!-- ================== DASHBOARD VIEW ================== -->
+            <div id="dashboardView" class="space-y-6 fade-in block">
+                <div class="flex justify-between items-center hide-empty">
+                    <h2 class="text-2xl font-bold flex items-center gap-2">
+                        <i data-lucide="layout-dashboard" class="w-6 h-6 text-gray-400"></i> Übersicht
+                    </h2>
+                    <!-- Plus Button is now inside the Navbar Options Dropdown unless empty state -->
+                </div>
+
+                <!-- Empty State Dashboard -->
+                <div id="dashboardEmptyState"
+                    class="hidden flex-col items-center justify-center py-20 bg-gray-900 border border-gray-800 border-dashed rounded-xl">
+                    <div class="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mb-4 text-gray-400">
+                        <i data-lucide="folder-plus" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-white mb-2">Noch keine Bereiche angelegt</h3>
+                    <p class="text-gray-400 text-sm mb-6 text-center max-w-md">Beginnen Sie damit, Ihren ersten
+                        Verbrauchsbereich (z.B. Strom, Wasser) über den Plus-Button hinzuzufügen.</p>
+                    <button onclick="openAddCategoryModal()"
+                        class="bg-primary-600 hover:bg-primary-500 text-white rounded-lg px-6 py-2.5 flex items-center gap-2 shadow-lg shadow-primary-500/20 font-medium">
+                        <i data-lucide="plus" class="w-5 h-5"></i> Bereich hinzufügen
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="dashboardTiles">
+                    <!-- Tiles injected by JS -->
+                </div>
+            </div>
+
+            <!-- ================== DETAIL VIEW ================== -->
+            <div id="detailView" class="space-y-8 fade-in hidden">
+                <!-- Header Detail View -->
+                <div
+                    class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-800 pb-4">
+                    <div class="flex items-center gap-4">
+                        <button onclick="showDashboard()"
+                            class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                            title="Zurück zur Übersicht">
+                            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                        </button>
+                        <div class="flex items-center gap-3">
+                            <div id="detailCatIconContainer"
+                                class="w-12 h-12 rounded-xl flex items-center justify-center shadow-inner overflow-hidden">
+                                <!-- Icon/Img injected -->
+                            </div>
+                            <div>
+                                <h2 id="detailCatName" class="text-2xl font-bold text-white">Category Name</h2>
+                                <p id="detailCatMeta" class="text-sm text-gray-400">Zählernummer: ...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="openCategoryOptionsModal()"
+                            class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors flex items-center gap-2"
+                            title="Optionen & Zählerwechsel">
+                            <i data-lucide="settings" class="w-5 h-5"></i> <span
+                                class="hidden sm:inline text-sm font-medium">Optionen</span>
+                        </button>
+                        <button onclick="openAddReadingModal()"
+                            class="bg-primary-600 hover:bg-primary-500 text-white rounded-lg px-4 py-2 flex items-center gap-2 shadow-lg shadow-primary-500/20 text-sm font-medium">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Zählerstand
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Chart Section -->
+                    <section
+                        class="lg:col-span-2 bg-gray-900 p-5 rounded-xl border border-gray-800 shadow-sm flex flex-col min-h-[400px]">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                            <h3 class="text-lg font-semibold flex items-center gap-2">
+                                <i data-lucide="bar-chart-2" class="w-5 h-5 text-gray-400"></i> Verbrauchsverlauf
+                            </h3>
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <select id="chartDateFilter" onchange="renderDetailChart()"
+                                    class="w-full sm:w-auto bg-gray-800 border border-gray-700 text-white text-sm rounded-lg p-2 outline-none focus:border-primary-500">
+                                    <option value="current_year">Laufendes Jahr</option>
+                                    <option value="last_year">Letztes Jahr</option>
+                                    <option value="all_time">Gesamter Zeitraum</option>
+                                    <option value="custom">Benutzerdefiniert</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="chartCustomRangeContainer"
+                            class="hidden flex-col sm:flex-row items-start sm:items-center gap-2 mb-4 justify-end">
+                            <input type="month" id="chartCustomStart" onchange="renderDetailChart()"
+                                class="w-full sm:w-auto bg-gray-800 border border-gray-700 text-white text-sm rounded-lg p-2 outline-none">
+                            <span class="text-xs text-gray-500 hidden sm:inline">bis</span>
+                            <input type="month" id="chartCustomEnd" onchange="renderDetailChart()"
+                                class="w-full sm:w-auto bg-gray-800 border border-gray-700 text-white text-sm rounded-lg p-2 outline-none">
+                        </div>
+                        <div class="relative flex-1 w-full h-full min-h-[300px]">
+                            <canvas id="detailChart"></canvas>
+                        </div>
+                    </section>
+
+                    <!-- Table Section -->
+                    <section
+                        class="lg:col-span-1 bg-gray-900 rounded-xl border border-gray-800 shadow-sm flex flex-col h-[500px]">
+                        <div
+                            class="p-4 border-b border-gray-800 bg-gray-900 rounded-t-xl sticky top-0 flex items-center justify-between">
+                            <h3 class="text-lg font-semibold flex items-center gap-2">
+                                <i data-lucide="history" class="w-5 h-5 text-gray-400"></i> Historie
+                            </h3>
+                        </div>
+                        <div class="flex-1 overflow-y-auto w-full">
+                            <table class="w-full text-sm text-left align-middle">
+                                <thead class="text-xs text-gray-400 uppercase bg-gray-800/50 sticky top-0">
+                                    <tr>
+                                        <th class="px-4 py-3">Datum</th>
+                                        <th class="px-4 py-3 text-right">Stand</th>
+                                        <th class="px-4 py-3 text-center w-12"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detailTableBody" class="divide-y divide-gray-800">
+                                    <!-- Rows injected by JS -->
+                                </tbody>
+                            </table>
+                            <div id="detailEmptyState"
+                                class="hidden flex flex-col items-center justify-center p-8 text-gray-500">
+                                <i data-lucide="clock" class="w-6 h-6 mb-2 opacity-50"></i>
+                                <p class="text-xs text-center">Keine Zählerstände vorhanden.</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <!-- ================== MODALS ================== -->
+
+        <!-- Add Category Modal -->
+        <div id="addCategoryModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+            <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm shadow-sm transition-opacity"
+                onclick="closeModal('addCategoryModal')"></div>
+            <div
+                class="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-xl slide-up max-h-[90vh] flex flex-col">
+                <div class="p-5 border-b border-gray-800 flex justify-between items-center shrink-0">
+                    <h3 class="text-lg font-bold">Bereich hinzufügen</h3>
+                    <button onclick="closeModal('addCategoryModal')" class="text-gray-400 hover:text-white"><i
+                            data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <div class="p-5 overflow-y-auto flex-1">
+                    <form id="addCategoryForm" onsubmit="saveCategory(event)" class="space-y-5">
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Name des Bereichs*</label>
+                                <input type="text" id="catName" list="catNameSuggestions" required
+                                    placeholder="z.B. Strom Haus"
+                                    class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 outline-none focus:border-primary-500">
+                                <datalist id="catNameSuggestions">
+                                    <option value="Strom">
+                                    <option value="Wasser">
+                                    <option value="Gas">
+                                    <option value="E-Auto">
+                                    <option value="Solar">
+                                    <option value="Solarthermie">
+                                    <option value="Fernwärme">
+                                    <option value="Pellet">
+                                </datalist>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Einheit*</label>
+                                <input type="text" id="catUnit" list="catUnitSuggestions" required
+                                    placeholder="z.B. kWh, m³, kg"
+                                    class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 outline-none focus:border-primary-500">
+                                <datalist id="catUnitSuggestions">
+                                    <option value="kWh">
+                                    <option value="m³">
+                                    <option value="kg">
+                                    <option value="Liter">
+                                </datalist>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-800 pt-4">
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Symbol (Icon)</label>
+                                <input type="hidden" id="catIcon" value="zap">
+                                <!-- JS Will inject a visual grid of icons here -->
+                                <div id="iconGrid" class="flex flex-wrap gap-2 mb-3"></div>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm w-full font-medium text-gray-400 mb-1">ODER: Eigenes Bild
+                                    hochladen (< 1MB)</label>
+                                        <input type="file" id="catImage" accept="image/*"
+                                            class="w-full text-sm text-gray-400 file:mr-3 file:py-2.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700 transition">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Akzentfarbe</label>
+                            <select id="catColor"
+                                class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 outline-none focus:border-primary-500">
+                                <option value="blue">Blau</option>
+                                <option value="red">Rot</option>
+                                <option value="yellow">Gelb</option>
+                                <option value="orange">Orange</option>
+                                <option value="green">Grün</option>
+                                <option value="cyan">Türkis</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Kommentar / Notiz</label>
+                            <textarea id="catComment" rows="2" placeholder="Kurze Beschreibung..."
+                                class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 outline-none focus:border-primary-500"></textarea>
+                        </div>
+
+                        <div
+                            class="border-t border-gray-800 pt-4 pb-2 bg-gray-850/50 -mx-5 px-5 rounded-b-xl border-dashed">
+                            <h4 class="text-sm font-semibold text-white mb-3 flex items-center gap-2"><i
+                                    data-lucide="gauge" class="w-4 h-4 text-gray-400"></i> Zählerdetails (Startwert)
+                            </h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-400 mb-1">Datum
+                                        Startablesung*</label>
+                                    <input type="date" id="catStartDate" required
+                                        class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 outline-none focus:border-primary-500 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-400 mb-1">Zählernummer
+                                        (Optional)</label>
+                                    <input type="text" id="catMeterId" placeholder="z.B. 01XYZ99"
+                                        class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 outline-none focus:border-primary-500 text-sm">
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label
+                                        class="block text-xs font-medium text-gray-400 mb-1">Start-Zählerstand*</label>
+                                    <input type="number" step="0.01" id="catStartValue" required placeholder="1234.56"
+                                        class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 outline-none focus:border-primary-500 text-sm font-mono">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 flex justify-end gap-3 shrink-0">
+                            <button type="button" onclick="closeModal('addCategoryModal')"
+                                class="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">Abbrechen</button>
+                            <button type="submit"
+                                class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-500 rounded-lg transition-colors shadow-lg shadow-primary-500/20">Bereich
+                                Speichern</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Options Modal -->
+        <div id="categoryOptionsModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+            <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity"
+                onclick="closeModal('categoryOptionsModal')"></div>
+            <div
+                class="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-md slide-up p-5 space-y-6">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                    <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="settings"
+                            class="w-5 h-5 text-gray-400"></i> Bereich Optionen</h3>
+                    <button onclick="closeModal('categoryOptionsModal')" class="text-gray-400 hover:text-white"><i
+                            data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+
+                <div class="space-y-3">
+                    <button onclick="openEditCategoryModal()"
+                        class="w-full text-left px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 transition flex items-center gap-3">
+                        <div
+                            class="w-8 h-8 rounded bg-green-500/10 text-green-400 flex items-center justify-center shrink-0">
+                            <i data-lucide="pencil" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium text-white">Bereich bearbeiten</div>
+                            <div class="text-xs text-gray-400">Name, Symbol, Farbe & Notiz anpassen</div>
+                        </div>
+                    </button>
+                    <button onclick="openMeterChangeModal()"
+                        class="w-full text-left px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 transition flex items-center gap-3">
+                        <div
+                            class="w-8 h-8 rounded bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
+                            <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium text-white">Neuer Zähler verbaut</div>
+                            <div class="text-xs text-gray-400">Startet Zählung von vorn (Wechsel dokumentieren)</div>
+                        </div>
+                    </button>
+                </div>
+
+                <div class="border-t border-gray-800 pt-4">
+                    <button onclick="promptDeleteCurrentCategory()"
+                        class="w-full text-left px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg transition flex items-center gap-3">
+                        <div class="w-8 h-8 rounded text-red-400 flex items-center justify-center shrink-0"><i
+                                data-lucide="trash-2" class="w-4 h-4"></i></div>
+                        <div>
+                            <div class="text-sm font-medium text-red-400">Bereich komplett löschen</div>
+                            <div class="text-xs text-red-500/70">Wird gelöscht inkl. aller Zählerstände unwiderruflich.
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meter Change Modal -->
+        <div id="meterChangeModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+            <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity"
+                onclick="closeModal('meterChangeModal')"></div>
+            <div class="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-sm slide-up">
+                <div class="p-5 border-b border-gray-800 flex justify-between items-center bg-blue-500/5 rounded-t-xl">
+                    <h3 class="text-lg font-bold flex items-center gap-2 text-blue-400"><i
+                            data-lucide="arrow-right-left" class="w-5 h-5"></i> Zählerwechsel</h3>
+                    <button onclick="closeModal('meterChangeModal')" class="text-gray-400 hover:text-white"><i
+                            data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <form id="meterChangeForm" onsubmit="saveMeterChange(event)" class="p-5 space-y-4">
+                    <p class="text-xs text-gray-400 leading-tight mb-2">Tragen Sie den Endstand des alten Zählers und
+                        den
+                        Startwert des neu verbauten Zählers ein. Der Verbrauchsbruch wird errechnet.</p>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Datum des Wechsels</label>
+                        <input type="date" id="mcDate" required
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 outline-none focus:border-blue-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Ausbau: Endstand alter
+                            Zähler</label>
+                        <input type="number" step="0.01" id="mcOldEndValue" required
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 outline-none focus:border-blue-500 text-sm font-mono text-red-300">
+                    </div>
+                    <div class="border-t border-gray-800 my-2 pt-2">
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Einbau: Neue Zählernummer</label>
+                        <input type="text" id="mcNewMeterId" required placeholder="z.B. N-88990-2"
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 outline-none focus:border-blue-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Einbau: Startstand neuer
+                            Zähler</label>
+                        <div class="relative">
+                            <input type="number" step="0.01" id="mcNewStartValue" required placeholder="0"
+                                class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 pr-10 outline-none focus:border-blue-500 text-sm font-mono text-green-300">
+                            <button type="button" onclick="startOCR('mcNewStartValue')"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-400 p-1 bg-gray-700 rounded-md transition-colors"
+                                title="Kamera (OCR)">
+                                <i data-lucide="camera" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="pt-2 flex justify-end gap-3">
+                        <button type="button" onclick="closeModal('meterChangeModal')"
+                            class="px-3 py-1.5 text-xs font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg">Abbrechen</button>
+                        <button type="submit"
+                            class="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-lg">Wechsel
+                            anlegen</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Category Modal -->
+        <div id="editCategoryModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+            <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity"
+                onclick="closeModal('editCategoryModal')"></div>
+            <div class="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-lg slide-up">
+                <div class="p-5 border-b border-gray-800 flex justify-between items-center">
+                    <h3 class="text-xl font-bold flex items-center gap-2"><i data-lucide="pencil"
+                            class="w-5 h-5 text-green-400"></i> Bereich bearbeiten</h3>
+                    <button onclick="closeModal('editCategoryModal')" class="text-gray-400 hover:text-white"><i
+                            data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <div class="p-5 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                    <form id="editCategoryForm" onsubmit="saveEditCategory(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Name des Bereichs*</label>
+                            <input type="text" id="editCatName" required
+                                class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 outline-none focus:border-green-500">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-800 pt-4">
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-medium text-gray-400 mb-2">Symbol (Icon)</label>
+                                <input type="hidden" id="editCatIcon" value="zap">
+                                <div id="editIconGrid" class="flex flex-wrap gap-2 mb-3"></div>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm w-full font-medium text-gray-400 mb-1">ODER: Neues Bild
+                                    hochladen (< 1MB)</label>
+                                        <div class="flex items-center gap-4">
+                                            <div id="editCatCurrentImgPreview"
+                                                class="hidden w-12 h-12 rounded-lg bg-gray-800 border border-gray-700 shrink-0 flex items-center justify-center overflow-hidden">
+                                            </div>
+                                            <input type="file" id="editCatImage" accept="image/*"
+                                                class="w-full text-sm text-gray-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700 transition">
+                                        </div>
+                                        <label
+                                            class="flex items-center gap-2 mt-2 text-sm text-gray-400 cursor-pointer hidden"
+                                            id="editCatRemoveImgLabel">
+                                            <input type="checkbox" id="editCatRemoveImage"
+                                                class="rounded border-gray-700 bg-gray-800 text-green-500 focus:ring-green-500 focus:ring-offset-gray-900">
+                                            Aktuelles Bild löschen (Icon verwenden)
+                                        </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Akzentfarbe</label>
+                            <select id="editCatColor"
+                                class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 outline-none focus:border-green-500">
+                                <option value="blue">Blau</option>
+                                <option value="red">Rot</option>
+                                <option value="yellow">Gelb</option>
+                                <option value="orange">Orange</option>
+                                <option value="green">Grün</option>
+                                <option value="cyan">Türkis</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Kommentar / Notiz</label>
+                            <textarea id="editCatComment" rows="2" placeholder="Kurze Beschreibung..."
+                                class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 outline-none focus:border-green-500"></textarea>
+                        </div>
+
+                        <div class="pt-2 flex justify-end gap-3 shrink-0">
+                            <button type="button" onclick="closeModal('editCategoryModal')"
+                                class="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">Abbrechen</button>
+                            <button type="submit"
+                                class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-500 rounded-lg transition-colors shadow-lg shadow-green-500/20">Änderungen
+                                Speichern</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Reading Modal -->
+        <div id="addReadingModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+            <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity"
+                onclick="closeModal('addReadingModal')"></div>
+            <div class="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-xs slide-up">
+                <div class="p-5 border-b border-gray-800 flex justify-between items-center">
+                    <h3 id="readingModalTitle" class="text-lg font-bold">Zählerstand</h3>
+                    <button onclick="closeModal('addReadingModal')" class="text-gray-400 hover:text-white"><i
+                            data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <form id="addReadingForm" onsubmit="saveReading(event)" class="p-5 space-y-4">
+                    <input type="hidden" id="readingEntryId">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Datum</label>
+                        <input type="date" id="readingDate" required
+                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 outline-none focus:border-primary-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Zählerstand</label>
+                        <div class="relative">
+                            <input type="number" step="0.01" id="readingValue" required
+                                class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 pr-12 outline-none focus:border-primary-500 font-mono text-lg">
+                            <button type="button" onclick="startOCR('readingValue')"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary-400 p-1.5 bg-gray-700 hover:bg-gray-600 rounded-md transition-colors"
+                                title="Foto aufnehmen (Texterkennung)">
+                                <i data-lucide="camera" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="pt-2 flex justify-end gap-3">
+                        <button type="submit"
+                            class="w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-500 rounded-lg shadow-lg shadow-primary-500/20">Speichern</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Export Modal -->
+        <div id="exportModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+            <!-- Re-use basic export HTML, minimal modifications needed -->
+            <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity"
+                onclick="closeModal('exportModal')"></div>
+            <div class="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-sm slide-up p-6">
+                <h3 class="text-lg font-bold flex items-center gap-2 mb-4 border-b border-gray-800 pb-2"><i
+                        data-lucide="download" class="w-5 h-5"></i> Daten exportieren</h3>
+                <div class="space-y-4">
+                    <p class="text-xs text-gray-400">Exportiert alle Zählerstände in eine CSV-Datei.</p>
+                    <button onclick="executeExport()"
+                        class="w-full px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-500 rounded-lg transition-colors flex justify-center items-center gap-2">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export nach CSV starten
+                    </button>
+                    <button onclick="closeModal('exportModal')"
+                        class="w-full px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">Abbrechen</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirm Modal -->
+        <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+            <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity" onclick="closeConfirmModal()">
+            </div>
+            <div
+                class="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-sm slide-up p-6 text-center">
+                <div
+                    class="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-bold mb-2" id="confirmTitle">Wirklich löschen?</h3>
+                <p class="text-sm text-gray-400 mb-6" id="confirmText">Dieser Vorgang kann nicht rückgängig gemacht
+                    werden.
+                </p>
+                <div id="confirmActions" class="flex justify-center gap-3">
+                    <button onclick="closeConfirmModal()"
+                        class="px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-white rounded-lg">Abbrechen</button>
+                    <button id="confirmBtn"
+                        class="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-500 rounded-lg">Löschen</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Password Modal -->
+        <div id="changePasswordModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+            <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity"
+                onclick="closeModal('changePasswordModal')"></div>
+            <div class="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-sm slide-up p-5">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-3 mb-4">
+                    <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="key"
+                            class="w-5 h-5 text-gray-400"></i> Passwort ändern</h3>
+                    <button onclick="closeModal('changePasswordModal')" class="text-gray-400 hover:text-white"><i
+                            data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <form id="changePasswordForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Neues Passwort</label>
+                        <input type="password" id="newPassword1" required minlength="6"
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Passwort wiederholen</label>
+                        <input type="password" id="newPassword2" required minlength="6"
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
+                    </div>
+                    <button type="submit"
+                        class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-3 rounded-lg flex justify-center items-center gap-2 mt-4">
+                        Passwort aktualisieren
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ================== ADMIN DASHBOARD VIEW ================== -->
+        <div id="adminDashboardView" class="hidden space-y-6 fade-in px-4 py-8 max-w-7xl mx-auto w-full">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                <div class="flex items-center gap-4">
+                    <button onclick="showDashboard()"
+                        class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                        title="Zurück">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    </button>
+                    <h2 class="text-2xl font-bold flex items-center gap-2">
+                        <i data-lucide="shield-check" class="w-6 h-6 text-primary-500"></i> Benutzerverwaltung
+                    </h2>
+                </div>
+                <button onclick="openCreateUserModal()"
+                    class="bg-primary-600 hover:bg-primary-500 text-white rounded-lg px-4 py-2.5 flex items-center gap-2 shadow-lg shadow-primary-500/20 font-medium">
+                    <i data-lucide="user-plus" class="w-5 h-5"></i> Neuen Benutzer anlegen
+                </button>
+            </div>
+
+            <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Registrierte Benutzer</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr
+                                    class="text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-800">
+                                    <th class="pb-3 pr-4">Email</th>
+                                    <th class="pb-3 px-4">Rolle</th>
+                                    <th class="pb-3 pl-4 text-right">Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminUsersList" class="divide-y divide-gray-800 text-sm">
+                                <!-- JS Injected Users -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create User Modal -->
+        <div id="createUserModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+            <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity"
+                onclick="closeModal('createUserModal')"></div>
+            <div class="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-sm slide-up p-5">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-3 mb-4">
+                    <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="user-plus"
+                            class="w-5 h-5 text-gray-400"></i> Benutzer anlegen</h3>
+                    <button onclick="closeModal('createUserModal')" class="text-gray-400 hover:text-white"><i
+                            data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <form id="createUserForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">E-Mail Adresse</label>
+                        <input type="email" id="newUserInputEmail" required
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors"
+                            placeholder="max@beispiel.de">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Start-Passwort</label>
+                        <input type="password" id="newUserInputPassword" value="123456" required minlength="6"
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
+                        <p class="text-xs text-gray-500 mt-1">Standardmäßig: 123456. Der Nutzer kann es später selbst
+                            ändern.</p>
+                    </div>
+                    <button type="submit"
+                        class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-3 rounded-lg flex justify-center items-center gap-2 mt-4">
+                        Benutzer erstellen
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div> <!-- End Main App Container -->
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Hidden Camera OCR Input -->
+    <input type="file" id="ocrCameraInput" accept="image/*" capture="environment" class="hidden"
+        onchange="processOCRImage(event)">
+
+    <!-- Firebase SDK (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <!-- ================== JAVASCRIPT LOGIC ================== -->
+    <script>
+        // --- Firebase Config ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDJribCVmSvsCaszpKHTmbW7PlNU3Jz7j8",
+            authDomain: "verbrauchsueberwachung.firebaseapp.com",
+            projectId: "verbrauchsueberwachung",
+            storageBucket: "verbrauchsueberwachung.firebasestorage.app",
+            messagingSenderId: "879446316321",
+            appId: "1:879446316321:web:374a4cd06a08ecc7d55a60",
+            measurementId: "G-K5123RVYXG"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Secondary App for Admin User Creation without logging out
+        const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryApp");
+
+        // Enable offline persistence
+        db.enablePersistence().catch((err) => {
+            console.error("Firebase persistence error:", err.code);
+        });
+
+        // Store current user state
+        let currentUser = null;
+        let isAdmin = false;
+
+        const STORAGE_KEY_DATA = 'verbrauchs_data_v2';
+        const STORAGE_KEY_SETTINGS = 'verbrauchs_categories_v2';
+        const STORAGE_KEY_NOTIFS = 'verbrauchs_notifs_v2';
+
+        const AVAILABLE_ICONS = [
+            'zap', 'droplets', 'flame', 'sun', 'thermometer-sun', 'waves', 'car-front', 'home', 'battery-charging', 'bike', 'plug', 'wind'
+        ];
+
+        let appData = [];
+        let categories = [];
+        let notifications = [];
+
+        let activeCategoryId = null; // null means dashboard view
+        let detailChartInstance = null;
+        let confirmCallback = null;
+        let activeOcrTargetInputId = null; // Remembers which input to fill
+
+        // --- Firebase Auth & Setup Logic ---
+        const authLoadingView = document.getElementById('authLoadingView');
+        const loginView = document.getElementById('loginView');
+        const adminSetupView = document.getElementById('adminSetupView');
+        const appContainer = document.getElementById('appContainer');
+
+        let isFirstRun = false;
+
+        async function checkFirstRun() {
+            try {
+                const metadataRef = db.collection('appSettings').doc('metadata');
+                const docSnap = await metadataRef.get();
+                if (!docSnap.exists || !docSnap.data().setupComplete) {
+                    return true;
+                }
+                return false;
+            } catch (err) {
+                console.error("Error checking first run state or insufficient permissions:", err);
+                return false;
+            }
+        }
+
+        auth.onAuthStateChanged(async (user) => {
+            authLoadingView.classList.add('hidden');
+
+            if (user) {
+                // Determine Admin Role
+                try {
+                    const userDoc = await db.collection('users').doc(user.uid).get();
+                    if (userDoc.exists && userDoc.data().role === 'admin') {
+                        isAdmin = true;
+                        document.getElementById('navAdminBtn').classList.remove('hidden');
+                    } else {
+                        isAdmin = false;
+                        document.getElementById('navAdminBtn').classList.add('hidden');
+                    }
+                } catch (e) {
+                    console.error("Could not fetch user role", e);
+                }
+
+                loginView.classList.add('hidden');
+                adminSetupView.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                appContainer.classList.add('flex');
+
+                await loadStateFromFirestore();
+                setupCsvImport();
+                initIconGrid();
+                renderView();
+            } else {
+                isAdmin = false;
+                appContainer.classList.add('hidden');
+                appContainer.classList.remove('flex');
+
+                isFirstRun = await checkFirstRun();
+
+                if (isFirstRun) {
+                    loginView.classList.add('hidden');
+                    adminSetupView.classList.remove('hidden');
+                    adminSetupView.classList.add('flex');
+                } else {
+                    adminSetupView.classList.add('hidden');
+                    loginView.classList.remove('hidden');
+                    loginView.classList.add('flex');
+                }
+            }
+        });
+
+        // Form Handlers
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const pwd = document.getElementById('loginPassword').value;
+            try {
+                await auth.signInWithEmailAndPassword(email, pwd);
+            } catch (error) {
+                showToast("Fehler beim Anmelden: " + error.message, "error");
+            }
+        });
+
+        document.getElementById('adminSetupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('adminSetupEmail').value;
+            const p1 = document.getElementById('adminSetupPassword1').value;
+            const p2 = document.getElementById('adminSetupPassword2').value;
+
+            if (p1 !== p2) return showToast("Passwörter stimmen nicht überein!", "error");
+
+            const btnText = document.getElementById('adminSetupBtnText');
+            btnText.innerText = "Erstelle...";
+
+            try {
+                const userCred = await auth.createUserWithEmailAndPassword(email, p1);
+                const uid = userCred.user.uid;
+
+                // Save admin role
+                await db.collection('users').doc(uid).set({
+                    email: email,
+                    role: 'admin',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Mark setup complete
+                await db.collection('appSettings').doc('metadata').set({
+                    setupComplete: true
+                });
+
+            } catch (error) {
+                showToast("Fehler bei der Einrichtung: " + error.message, "error");
+                btnText.innerText = "Erstellen & Anmelden";
+            }
+        });
+
+        function logoutApp() {
+            auth.signOut();
+        }
+
+        function openChangePasswordModal() {
+            document.getElementById('newPassword1').value = '';
+            document.getElementById('newPassword2').value = '';
+            document.getElementById('changePasswordModal').classList.remove('hidden');
+            document.getElementById('changePasswordModal').classList.add('flex');
+        }
+
+        document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const p1 = document.getElementById('newPassword1').value;
+            const p2 = document.getElementById('newPassword2').value;
+            if (p1 !== p2) return showToast("Passwörter stimmen nicht überein!", "error");
+
+            if (auth.currentUser) {
+                try {
+                    await auth.currentUser.updatePassword(p1);
+                    showToast("Passwort erfolgreich geändert.", "success");
+                    closeModal('changePasswordModal');
+                } catch (error) {
+                    showToast("Fehler: " + error.message + " (Ggf. neu anmelden erforderlich)", "error");
+                }
+            }
+        });
+
+        async function loadStateFromFirestore() {
+            if (!currentUser) return;
+            try {
+                const toast = showToast("Lade Daten...", "loading");
+                const uid = currentUser.uid;
+
+                const cSnap = await db.collection('users').doc(uid).collection('categories').get();
+                categories = [];
+                cSnap.forEach(d => categories.push(d.data()));
+
+                const dSnap = await db.collection('users').doc(uid).collection('appData').get();
+                appData = [];
+                dSnap.forEach(d => appData.push(d.data()));
+                appData.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                const nSnap = await db.collection('users').doc(uid).collection('notifications').get();
+                notifications = [];
+                nSnap.forEach(d => notifications.push(d.data()));
+
+                dismissToast(toast);
+                checkAndGenerateNotifications();
+            } catch (err) {
+                console.error("Error loading state from Firestore:", err);
+                showToast("Fehler beim Laden der Daten.", "error");
+            }
+        }
+
+        // --- Firestore Sync Helpers ---
+        // Instead of a single bulk saveState(), we actively sync to the Cloud in the background
+        function fsSetCat(cat) { if (currentUser) db.collection('users').doc(currentUser.uid).collection('categories').doc(cat.id).set(cat).catch(console.error); }
+        function fsDelCat(id) { if (currentUser) db.collection('users').doc(currentUser.uid).collection('categories').doc(id).delete().catch(console.error); }
+        function fsSetData(d) { if (currentUser) db.collection('users').doc(currentUser.uid).collection('appData').doc(d.id).set(d).catch(console.error); }
+        function fsDelData(id) { if (currentUser) db.collection('users').doc(currentUser.uid).collection('appData').doc(id).delete().catch(console.error); }
+        function fsSetNotif(n) { if (currentUser) db.collection('users').doc(currentUser.uid).collection('notifications').doc(n.id).set(n).catch(console.error); }
+        function fsDelNotif(id) { if (currentUser) db.collection('users').doc(currentUser.uid).collection('notifications').doc(id).delete().catch(console.error); }
+
+        function loadState() {
+            // Deprecated local storage method - removed to prevent conflicts
+        }
+
+        function saveState() {
+            // Deprecated local storage method - removed, components now use fs* helpers directly
+            // Only keeping as an empty skeleton to prevent crash if missed somewhere
+            appData.sort((a, b) => new Date(b.date) - new Date(a.date));
+            updateNotificationUI();
+        }
+        function showAdminDashboard() {
+            if (!isAdmin) return showToast("Keine Berechtigung", "error");
+            document.getElementById('dashboardView').classList.add('hidden');
+            document.getElementById('detailView').classList.add('hidden');
+            document.getElementById('adminDashboardView').classList.remove('hidden');
+            loadAdminUsers();
+        }
+
+        async function loadAdminUsers() {
+            const list = document.getElementById('adminUsersList');
+            list.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-500">Lade Benutzer...</td></tr>';
+            try {
+                const snap = await db.collection('users').get();
+                list.innerHTML = '';
+                snap.forEach(doc => {
+                    const u = doc.data();
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-gray-800 hover:bg-gray-800/50 transition-colors";
+                    tr.innerHTML = `
+                        <td class="py-3 pr-4">${u.email}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-1 bg-${u.role === 'admin' ? 'primary' : 'gray'}-500/20 text-${u.role === 'admin' ? 'primary' : 'gray'}-400 text-xs rounded border border-${u.role === 'admin' ? 'primary' : 'gray'}-500/30 uppercase tracking-wider font-semibold">${u.role}</span>
+                        </td>
+                        <td class="py-3 pl-4 text-right">
+                            ${u.role !== 'admin' ? `
+                                <button onclick="resetUserPassword('${doc.id}', '${u.email}')" class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors" title="Passwort-Reset E-Mail senden"><i data-lucide="mail" class="w-4 h-4"></i></button>
+                                <button onclick="deleteUserAccount('${doc.id}', '${u.email}')" class="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors ml-1" title="Benutzer deaktivieren"><i data-lucide="user-x" class="w-4 h-4"></i></button>
+                            ` : ''}
+                        </td>
+                    `;
+                    list.appendChild(tr);
+                });
+                lucide.createIcons();
+            } catch (err) {
+                console.error(err);
+                showToast("Fehler beim Laden der Benutzer", "error");
+            }
+        }
+
+        function openCreateUserModal() {
+            document.getElementById('newUserInputEmail').value = '';
+            document.getElementById('newUserInputPassword').value = '123456';
+            document.getElementById('createUserModal').classList.remove('hidden');
+            document.getElementById('createUserModal').classList.add('flex');
+        }
+
+        document.getElementById('createUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('newUserInputEmail').value;
+            const pwd = document.getElementById('newUserInputPassword').value;
+
+            try {
+                const toast = showToast("Erstelle Benutzer...", "loading");
+                // Use secondary app to prevent logging out the admin
+                const userCred = await secondaryApp.auth().createUserWithEmailAndPassword(email, pwd);
+                await secondaryApp.auth().signOut();
+
+                await db.collection('users').doc(userCred.user.uid).set({
+                    email: email,
+                    role: 'user',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: 'active'
+                });
+
+                dismissToast(toast);
+                showToast("Benutzer erfolgreich erstellt.", "success");
+                closeModal('createUserModal');
+                loadAdminUsers();
+            } catch (err) {
+                showToast("Fehler beim Erstellen: " + err.message, "error");
+            }
+        });
+
+        async function resetUserPassword(uid, email) {
+            if (confirm(`Möchten Sie eine Passwort-Zurücksetzen-E-Mail an ${email} senden? (Direktes Ändern durch Admin ist aus Sicherheitsgründen blockiert)`)) {
+                try {
+                    await auth.sendPasswordResetEmail(email);
+                    showToast("Email wurde gesendet!", "success");
+                } catch (e) {
+                    showToast("Fehler: " + e.message, "error");
+                }
+            }
+        }
+
+        async function deleteUserAccount(uid, email) {
+            if (confirm(`Soll der Nutzer ${email} deaktiviert werden? (Endgültiges Löschen erfordert Firebase Admin SDK)`)) {
+                try {
+                    // Soft-delete user so they fail security rules
+                    await db.collection('users').doc(uid).update({ status: 'deleted' });
+                    showToast("Nutzer deaktiviert.", "success");
+                    loadAdminUsers();
+                } catch (e) {
+                    showToast("Fehler: " + e.message, "error");
+                }
+            }
+        }
+
+        // --- View & Init ---
+        function initIconGrid(targetGrid = 'iconGrid', targetInput = 'catIcon', activeAccentColor = 'primary', overrideIcon = null) {
+            const grid = document.getElementById(targetGrid);
+            grid.innerHTML = '';
+            const initialIcon = overrideIcon || AVAILABLE_ICONS[0];
+
+            AVAILABLE_ICONS.forEach((icon, i) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                const isActive = icon === initialIcon;
+
+                const activeClasses = `border-${activeAccentColor}-500 bg-${activeAccentColor}-500/10 text-${activeAccentColor}-400`;
+                const inactiveClasses = `border-gray-700 bg-gray-800 text-gray-400 hover:bg-gray-700`;
+
+                btn.className = `p-2 rounded-lg border-2 transition-colors flex items-center justify-center ${isActive ? activeClasses : inactiveClasses}`;
+                btn.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i>`;
+                btn.dataset.icon = icon;
+
+                if (isActive) document.getElementById(targetInput).value = icon;
+
+                btn.onclick = () => {
+                    // Reset all
+                    Array.from(grid.children).forEach(b => {
+                        b.className = `p-2 rounded-lg border-2 transition-colors flex items-center justify-center ${inactiveClasses}`;
+                    });
+                    // Set active
+                    btn.className = `p-2 rounded-lg border-2 transition-colors flex items-center justify-center ${activeClasses}`;
+                    document.getElementById(targetInput).value = icon;
+                };
+                grid.appendChild(btn);
+            });
+            lucide.createIcons();
+        }
+
+        // --- State Management ---
+
+        function loadStateDeprecated() { }
+        function saveStateDeprecated() { }
+
+        function checkAndGenerateNotifications() {
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
+            categories.forEach(cat => {
+                const hasReading = appData.some(d => {
+                    if (d.categoryId !== cat.id) return false;
+                    const dDate = new Date(d.date);
+                    return dDate.getMonth() === currentMonth && dDate.getFullYear() === currentYear;
+                });
+
+                if (!hasReading) {
+                    const hasNotif = notifications.some(n => n.categoryId === cat.id && n.month === currentMonth && n.year === currentYear);
+                    if (!hasNotif) {
+                        const newNotif = {
+                            id: 'notif_' + Date.now().toString(36) + Math.random().toString(36).substr(2),
+                            categoryId: cat.id,
+                            month: currentMonth,
+                            year: currentYear,
+                            isResolved: false
+                        };
+                        notifications.push(newNotif);
+                        fsSetNotif(newNotif);
+                    }
+                }
+            });
+
+            updateNotificationUI();
+        }
+
+        function updateNotificationUI() {
+            const activeNotifs = notifications.filter(n => !n.isResolved);
+            const badge = document.getElementById('notificationBadge');
+            const list = document.getElementById('notificationList');
+
+            if (!badge || !list) return;
+
+            if (activeNotifs.length > 0) {
+                badge.textContent = activeNotifs.length;
+                badge.classList.remove('hidden');
+                badge.classList.add('flex');
+            } else {
+                badge.classList.add('hidden');
+                badge.classList.remove('flex');
+            }
+
+            list.innerHTML = '';
+            if (activeNotifs.length === 0) {
+                list.innerHTML = '<div class="px-4 py-3 text-sm text-gray-400 text-center">Keine neuen Benachrichtigungen</div>';
+            } else {
+                const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+                activeNotifs.forEach(n => {
+                    const cat = categories.find(c => c.id === n.categoryId);
+                    if (!cat) return;
+
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left px-4 py-3 hover:bg-gray-800 transition flex items-center gap-3 border-b border-gray-800 last:border-0";
+                    btn.onclick = () => {
+                        openCategory(cat.id);
+                        openAddReadingModal();
+                    };
+
+                    btn.innerHTML = `
+                        <div class="w-8 h-8 rounded-full bg-${getStyleClasses(cat.color).text.split('-')[1]}-500/10 ${getStyleClasses(cat.color).text} flex items-center justify-center shrink-0">
+                            <i data-lucide="bell-ring" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium text-white">Zählerstand fällig</div>
+                            <div class="text-xs text-gray-400">${cat.name} (${monthNames[n.month]} ${n.year}) eintragen</div>
+                        </div>
+                    `;
+                    list.appendChild(btn);
+                });
+            }
+            lucide.createIcons();
+        }
+
+        // --- View Routing ---
+        function renderView() {
+            lucide.createIcons();
+            if (activeCategoryId === null) {
+                document.getElementById('detailView').classList.add('hidden');
+                document.getElementById('detailView').classList.remove('block');
+                document.getElementById('dashboardView').classList.remove('hidden');
+                document.getElementById('dashboardView').classList.add('block');
+
+                // Dashboard actions visible
+                document.getElementById('navDashboardActions').classList.remove('hidden');
+
+                renderDashboard();
+            } else {
+                document.getElementById('dashboardView').classList.add('hidden');
+                document.getElementById('dashboardView').classList.remove('block');
+                document.getElementById('detailView').classList.remove('hidden');
+                document.getElementById('detailView').classList.add('block');
+
+                // Hide dashboard actions on detail page
+                document.getElementById('navDashboardActions').classList.add('hidden');
+
+                renderDetailView();
+            }
+        }
+
+        function showDashboard() {
+            activeCategoryId = null;
+            renderView();
+        }
+
+        function openCategory(id) {
+            activeCategoryId = id;
+            renderView();
+        }
+
+        // --- Computations ---
+        /*
+        Returns an array of monthly grouped consumptions for rendering and logic.
+        Handles meter resets (`isMeterChangeStart`). 
+        */
+        function getCategoryConsumptions(categoryId) {
+            // Filter and sort ASCENDING by date to calculate differences
+            const data = appData.filter(d => d.categoryId === categoryId).sort((a, b) => new Date(a.date) - new Date(b.date));
+            if (data.length < 2) return [];
+
+            let monthlyGrouped = {}; // key: "YYYY-MM", value: amount sum
+
+            for (let i = 1; i < data.length; i++) {
+                const prev = data[i - 1];
+                const curr = data[i];
+
+                if (curr.isMeterChangeStart) {
+                    continue; // Disconnects difference. Next calculation uses this as prev.
+                }
+
+                let diff = curr.value - prev.value;
+                if (diff >= 0) {
+                    const dateObj = new Date(curr.date);
+                    const key = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+                    if (!monthlyGrouped[key]) monthlyGrouped[key] = 0;
+                    monthlyGrouped[key] += diff;
+                }
+            }
+
+            // Convert to array
+            return Object.keys(monthlyGrouped).map(k => {
+                const [y, m] = k.split('-');
+                return {
+                    key: k,
+                    year: parseInt(y),
+                    month: parseInt(m) - 1,
+                    amount: monthlyGrouped[k]
+                };
+            }).sort((a, b) => a.key.localeCompare(b.key));
+        }
+
+        // --- Dashboard Rendering ---
+        function renderDashboard() {
+            const container = document.getElementById('dashboardTiles');
+            const emptyState = document.getElementById('dashboardEmptyState');
+            container.innerHTML = '';
+
+            if (categories.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+
+                const now = new Date();
+                const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+                let lastMonthDate = new Date();
+                lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
+                const lastMonthKey = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
+
+                categories.forEach(cat => {
+                    const consumptions = getCategoryConsumptions(cat.id);
+                    const currentC = consumptions.find(c => c.key === currentMonthKey)?.amount || 0;
+                    const prevC = consumptions.find(c => c.key === lastMonthKey)?.amount || 0;
+
+                    // New: Calculate Stats
+                    const currentYearSum = consumptions.filter(c => c.year === now.getFullYear()).reduce((sum, c) => sum + c.amount, 0);
+                    const allTimeAvg = consumptions.length > 0 ? (consumptions.reduce((sum, c) => sum + c.amount, 0) / consumptions.length) : 0;
+
+                    const diff = currentC - prevC;
+                    let diffHTML = '';
+                    if (diff > 0) {
+                        diffHTML = `<span class="text-red-400 font-medium text-xs flex items-center"><i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> +${diff.toFixed(1)} ${cat.unit} ggü. Vormonat</span>`;
+                    } else if (diff < 0) {
+                        diffHTML = `<span class="text-green-400 font-medium text-xs flex items-center"><i data-lucide="trending-down" class="w-3 h-3 mr-1"></i> ${diff.toFixed(1)} ${cat.unit} ggü. Vormonat</span>`;
+                    } else {
+                        diffHTML = `<span class="text-gray-500 font-medium text-xs flex items-center"><i data-lucide="minus" class="w-3 h-3 mr-1"></i> Keine Änd. ggü. Vormonat</span>`;
+                    }
+
+                    const styles = getStyleClasses(cat.color);
+
+                    let mediaHtml = '';
+                    if (cat.imageBase64) {
+                        mediaHtml = `<img src="${cat.imageBase64}" class="w-10 h-10 rounded-lg object-cover">`;
+                    } else {
+                        mediaHtml = `<div class="w-10 h-10 rounded-lg ${styles.bg} ${styles.text} flex items-center justify-center"><i data-lucide="${cat.icon}" class="w-5 h-5"></i></div>`;
+                    }
+
+                    const tile = document.createElement('div');
+                    tile.onclick = () => openCategory(cat.id);
+                    tile.className = 'bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-sm hover:border-gray-700 transition-colors relative group cursor-pointer';
+                    tile.innerHTML = `
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                ${mediaHtml}
+                                <div>
+                                    <h3 class="text-base font-bold text-white">${cat.name}</h3>
+                                    <div class="text-xs text-gray-500 font-mono">${cat.meterNumber ? 'Nr: ' + cat.meterNumber : 'Keine Zählernr.'}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="text-xs text-gray-400 mb-1 leading-tight line-clamp-2 min-h-[1.75rem]">${cat.comment || '<i>Kein Kommentar</i>'}</div>
+                            <div class="text-3xl font-bold font-mono tracking-tight text-gray-100">${currentC.toFixed(1)} <span class="text-base font-normal text-gray-500 font-sans tracking-normal">${cat.unit}</span></div>
+                            <div class="text-xs text-gray-500 mt-1 uppercase font-semibold tracking-wider">Verbrauch Akt. Monat</div>
+                        </div>
+                        <div class="pt-3 border-t border-gray-800/50 mb-3">
+                            ${diffHTML}
+                        </div>
+                        <div class="flex justify-between items-center bg-gray-800/50 rounded-lg p-2.5 mt-2">
+                             <div class="flex flex-col">
+                                 <span class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-0.5 flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i> Jahr ${now.getFullYear()}</span>
+                                 <span class="text-sm font-mono text-gray-200">${currentYearSum.toFixed(1)} <span class="text-xs text-gray-500 font-sans">${cat.unit}</span></span>
+                             </div>
+                             <div class="w-px h-6 bg-gray-700 mx-2"></div>
+                             <div class="flex flex-col text-right">
+                                 <span class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-0.5 flex items-center justify-end gap-1"><i data-lucide="bar-chart-2" class="w-3 h-3"></i> Ø Lj. Monat</span>
+                                 <span class="text-sm font-mono text-gray-200">${allTimeAvg.toFixed(1)} <span class="text-xs text-gray-500 font-sans">${cat.unit}</span></span>
+                             </div>
+                        </div>
+                    `;
+                    container.appendChild(tile);
+                });
+                lucide.createIcons();
+            }
+        }
+
+        // --- Detail View Rendering ---
+        function renderDetailView() {
+            const cat = categories.find(c => c.id === activeCategoryId);
+            if (!cat) { showDashboard(); return; }
+
+            document.getElementById('detailCatName').textContent = cat.name;
+            document.getElementById('detailCatMeta').textContent = cat.meterNumber ? 'Zählernummer: ' + cat.meterNumber : '';
+
+            const styles = getStyleClasses(cat.color);
+            const iconContainer = document.getElementById('detailCatIconContainer');
+            iconContainer.className = `w-12 h-12 rounded-xl flex items-center justify-center shadow-inner overflow-hidden ${styles.bg} ${styles.text}`;
+            if (cat.imageBase64) {
+                iconContainer.innerHTML = `<img src="${cat.imageBase64}" class="w-full h-full object-cover">`;
+            } else {
+                iconContainer.innerHTML = `<i data-lucide="${cat.icon}" class="w-6 h-6"></i>`;
+            }
+
+            renderDetailTable(cat);
+            renderDetailChart(cat);
+            lucide.createIcons();
+        }
+
+        function renderDetailTable(cat) {
+            const tbody = document.getElementById('detailTableBody');
+            const emptyState = document.getElementById('detailEmptyState');
+            tbody.innerHTML = '';
+
+            // sorted DESC above during save
+            const data = appData.filter(d => d.categoryId === activeCategoryId);
+
+            if (data.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+
+                data.forEach(entry => {
+                    const isChange = entry.isMeterChangeStart || entry.isMeterChangeEnd;
+                    let infoBadge = '';
+                    if (entry.isMeterChangeStart) infoBadge = `<span class="bg-blue-500/20 text-blue-400 text-[10px] px-1.5 py-0.5 rounded ml-2 uppercase tracking-wide">Einbau NEU</span>`;
+                    if (entry.isMeterChangeEnd) infoBadge = `<span class="bg-red-500/20 text-red-400 text-[10px] px-1.5 py-0.5 rounded ml-2 uppercase tracking-wide">Ausbau ALT</span>`;
+                    if (entry.isInitial) infoBadge = `<span class="bg-indigo-500/20 text-indigo-400 text-[10px] px-1.5 py-0.5 rounded ml-2 uppercase tracking-wide">Startwert</span>`;
+
+                    const tr = document.createElement('tr');
+                    tr.className = `hover:bg-gray-800/30 transition-colors ${isChange ? 'bg-gray-800/10' : ''}`;
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 whitespace-nowrap text-gray-300">
+                            ${formatDate(entry.date)} ${infoBadge}
+                        </td>
+                        <td class="px-4 py-3 text-right font-mono font-medium ${isChange ? 'text-blue-300' : 'text-gray-100'} whitespace-nowrap">
+                            ${entry.value.toFixed(2)} <span class="text-xs text-gray-500 font-sans">${cat.unit}</span>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="promptDeleteEntry('${entry.id}')" class="text-gray-500 hover:text-red-400 transition-colors p-1" title="Löschen">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        function renderDetailChart(cat) {
+            if (!cat) cat = categories.find(c => c.id === activeCategoryId);
+            if (!cat) return;
+
+            const ctx = document.getElementById('detailChart').getContext('2d');
+            let consumptions = getCategoryConsumptions(cat.id);
+
+            const filterEl = document.getElementById('chartDateFilter');
+            const filterValue = filterEl ? filterEl.value : 'current_year';
+
+            const customContainer = document.getElementById('chartCustomRangeContainer');
+            if (customContainer) {
+                if (filterValue === 'custom') customContainer.classList.remove('hidden');
+                else customContainer.classList.add('hidden');
+            }
+
+            const now = new Date();
+            const currentYear = now.getFullYear();
+
+            if (filterValue === 'current_year') {
+                consumptions = consumptions.filter(c => c.year === currentYear);
+            } else if (filterValue === 'last_year') {
+                consumptions = consumptions.filter(c => c.year === currentYear - 1);
+            } else if (filterValue === 'custom') {
+                const startEl = document.getElementById('chartCustomStart');
+                const endEl = document.getElementById('chartCustomEnd');
+                if (startEl && endEl && startEl.value && endEl.value) {
+                    const startKey = startEl.value; // "YYYY-MM"
+                    const endKey = endEl.value;
+                    consumptions = consumptions.filter(c => {
+                        const mStr = String(c.month + 1).padStart(2, '0');
+                        const key = `${c.year}-${mStr}`;
+                        return key >= startKey && key <= endKey;
+                    });
+                }
+            }
+
+            // Group by Year-Month for Bar Chart.
+            const labels = consumptions.map(c => {
+                const ms = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+                return `${ms[c.month]} ${c.year}`;
+            });
+            const values = consumptions.map(c => c.amount);
+
+            if (detailChartInstance) { detailChartInstance.destroy(); }
+
+            Chart.defaults.color = '#9ca3af';
+            Chart.defaults.font.family = 'Inter';
+
+            detailChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels.length ? labels : ['Keine Daten'],
+                    datasets: [{
+                        label: 'Verbrauch',
+                        data: values.length ? values : [0],
+                        backgroundColor: getStyleClasses(cat.color).hex + 'CC',
+                        borderRadius: 4,
+                        maxBarThickness: 40
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1f2937', titleColor: '#f3f4f6', bodyColor: '#d1d5db',
+                            callbacks: { label: (ctx) => `${ctx.parsed.y.toFixed(1)} ${cat.unit}` }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#374151' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+
+        // --- Category Modals ---
+        function openAddCategoryModal() {
+            document.getElementById('addCategoryForm').reset();
+            document.getElementById('catStartDate').valueAsDate = new Date();
+            initIconGrid('iconGrid', 'catIcon', 'primary');
+            const modal = document.getElementById('addCategoryModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        async function saveCategory(e) {
+            e.preventDefault();
+            const name = document.getElementById('catName').value.trim();
+            const unit = document.getElementById('catUnit').value.trim();
+            const icon = document.getElementById('catIcon').value;
+            const color = document.getElementById('catColor').value;
+            const comment = document.getElementById('catComment').value.trim();
+            const meterId = document.getElementById('catMeterId').value.trim();
+
+            if (!meterId) {
+                const proceed = window.confirm("Wirklich keine Zählernummer vorhanden? Dies kann nachträglich nicht mehr geändert werden!");
+                if (!proceed) return;
+            }
+
+            const startVal = parseFloat(document.getElementById('catStartValue').value);
+            const startDate = document.getElementById('catStartDate').value;
+            const fileInput = document.getElementById('catImage');
+
+            let imageBase64 = null;
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                if (file.size > 1024 * 1024) { // 1MB limit
+                    showToast('Das Bild ist zu groß (Max 1MB)', 'error');
+                    return;
+                }
+                imageBase64 = await toBase64(file);
+            }
+
+            const newCatId = 'cat_' + Date.now().toString(36);
+            const newCat = {
+                id: newCatId,
+                name, unit, icon, color, comment,
+                meterNumber: meterId,
+                imageBase64
+            };
+
+            categories.push(newCat);
+
+            const initialReading = {
+                id: 'rd_' + Date.now().toString(36),
+                categoryId: newCatId,
+                date: startDate,
+                value: startVal,
+                isInitial: true
+            };
+            appData.push(initialReading);
+
+            fsSetCat(newCat);
+            fsSetData(initialReading);
+
+            closeModal('addCategoryModal');
+            showToast(`${name} erfolgreich angelegt`, 'success');
+            renderView();
+        }
+
+        // --- Category Options / Meter Change ---
+        function openCategoryOptionsModal() {
+            const modal = document.getElementById('categoryOptionsModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function openEditCategoryModal() {
+            closeModal('categoryOptionsModal');
+            const cat = categories.find(c => c.id === activeCategoryId);
+            if (!cat) return;
+
+            document.getElementById('editCategoryForm').reset();
+            document.getElementById('editCatName').value = cat.name;
+            document.getElementById('editCatColor').value = cat.color;
+            document.getElementById('editCatComment').value = cat.comment || '';
+
+            const preview = document.getElementById('editCatCurrentImgPreview');
+            const removeImgLabel = document.getElementById('editCatRemoveImgLabel');
+            document.getElementById('editCatRemoveImage').checked = false;
+
+            if (cat.imageBase64) {
+                preview.classList.remove('hidden');
+                preview.innerHTML = `<img src="${cat.imageBase64}" class="w-full h-full object-cover">`;
+                removeImgLabel.classList.remove('hidden');
+            } else {
+                preview.classList.add('hidden');
+                preview.innerHTML = '';
+                removeImgLabel.classList.add('hidden');
+            }
+
+            initIconGrid('editIconGrid', 'editCatIcon', 'green', cat.icon);
+
+            const modal = document.getElementById('editCategoryModal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        }
+
+        async function saveEditCategory(e) {
+            e.preventDefault();
+            const catIndex = categories.findIndex(c => c.id === activeCategoryId);
+            if (catIndex === -1) return;
+
+            const cat = categories[catIndex];
+
+            cat.name = document.getElementById('editCatName').value.trim();
+            cat.icon = document.getElementById('editCatIcon').value;
+            cat.color = document.getElementById('editCatColor').value;
+            cat.comment = document.getElementById('editCatComment').value.trim();
+
+            const fileInput = document.getElementById('editCatImage');
+            const removeImage = document.getElementById('editCatRemoveImage').checked;
+
+            if (removeImage) {
+                cat.imageBase64 = null;
+            } else if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                if (file.size > 1024 * 1024) {
+                    showToast('Das Bild ist zu groß (Max 1MB)', 'error');
+                    return;
+                }
+                cat.imageBase64 = await toBase64(file);
+            }
+
+            fsSetCat(cat);
+            closeModal('editCategoryModal');
+            showToast('Bereich aktualisiert', 'success');
+            renderView(); // re-renders detail view since activeCategoryId is set
+        }
+
+        function promptDeleteCurrentCategory() {
+            closeModal('categoryOptionsModal');
+            document.getElementById('confirmTitle').textContent = 'Bereich unwiderruflich löschen?';
+            document.getElementById('confirmText').textContent = 'Möchtest du vor dem Löschen eine CSV-Datei mit allen Zählerständen dieses Bereichs exportieren?';
+
+            const actionsDiv = document.getElementById('confirmActions');
+            actionsDiv.innerHTML = `
+                <button onclick="executeDeleteCategory(true)" class="w-full sm:w-auto px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-500 rounded-lg flex items-center justify-center gap-2 mb-2 sm:mb-0"><i data-lucide="download" class="w-4 h-4"></i> Löschen & CSV laden</button>
+                <button onclick="executeDeleteCategory(false)" class="w-full sm:w-auto px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-500 rounded-lg mb-2 sm:mb-0">Nur Löschen</button>
+                <button onclick="closeConfirmModal()" class="w-full sm:w-auto px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-white rounded-lg">Abbrechen</button>
+            `;
+            actionsDiv.className = 'flex flex-col sm:flex-row justify-center sm:gap-3';
+            lucide.createIcons();
+
+            const modal = document.getElementById('confirmModal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        }
+
+        function executeDeleteCategory(exportCsv) {
+            if (exportCsv) {
+                const cat = categories.find(c => c.id === activeCategoryId);
+                const catData = appData.filter(d => d.categoryId === activeCategoryId);
+                if (catData.length > 0) {
+                    const exportData = catData.map(d => {
+                        return {
+                            Datum: d.date,
+                            Bereich: cat.name,
+                            Zählernummer: cat.meterNumber || '',
+                            Einheit: cat.unit,
+                            Stand: d.value,
+                            Kommentar: (cat.comment || '').replace(/"/g, '""'),
+                            Notiz: d.isMeterChangeStart ? "Neuer Zähler Einbau" : (d.isMeterChangeEnd ? "Alter Zähler Ausbau" : (d.isInitial ? "Startwert" : ""))
+                        };
+                    });
+                    const headers = ['Datum', 'Bereich', 'Zählernummer', 'Einheit', 'Stand', 'Kommentar', 'Notiz'];
+                    const rows = exportData.map(d => `${d.Datum};"${d.Bereich}";"${d.Zählernummer}";"${d.Einheit}";${d.Stand.toString().replace('.', ',')};"${d.Kommentar}";"${d.Notiz}"`);
+                    const csv = [headers.join(';'), ...rows].join('\n');
+
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = `VData_${cat.name.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } else {
+                    showToast('Keine Daten für Export vorhanden', 'info');
+                }
+            }
+
+            const cid = activeCategoryId;
+            categories = categories.filter(c => c.id !== cid);
+            fsDelCat(cid);
+
+            const catData = appData.filter(d => d.categoryId === cid);
+            catData.forEach(d => fsDelData(d.id));
+            appData = appData.filter(d => d.categoryId !== cid);
+
+            const catNotifs = notifications.filter(n => n.categoryId === cid);
+            catNotifs.forEach(n => fsDelNotif(n.id));
+            notifications = notifications.filter(n => n.categoryId !== cid);
+
+            closeConfirmModal();
+            showDashboard();
+            showToast('Bereich gelöscht', 'success');
+        }
+
+        function openMeterChangeModal() {
+            closeModal('categoryOptionsModal');
+            document.getElementById('meterChangeForm').reset();
+            document.getElementById('mcDate').valueAsDate = new Date();
+
+            const modal = document.getElementById('meterChangeModal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        }
+
+        function saveMeterChange(e) {
+            e.preventDefault();
+            const date = document.getElementById('mcDate').value;
+            const oldEnd = parseFloat(document.getElementById('mcOldEndValue').value);
+            const newId = document.getElementById('mcNewMeterId').value.trim();
+            const newStart = parseFloat(document.getElementById('mcNewStartValue').value);
+
+            // We add 2 entries to gracefully switch meter calculations
+            const baseTime = Date.now().toString(36);
+
+            const oldReading = {
+                id: 'rd_old_' + baseTime,
+                categoryId: activeCategoryId,
+                date: date,
+                value: oldEnd,
+                isMeterChangeEnd: true
+            };
+            appData.push(oldReading);
+            fsSetData(oldReading);
+
+            const newReading = {
+                id: 'rd_new_' + baseTime,
+                categoryId: activeCategoryId,
+                date: date, // same date, sorting relies on insertion order / id fallback slightly, but we just read chronologically later
+                value: newStart,
+                isMeterChangeStart: true,
+                newMeterNumber: newId
+            };
+            appData.push(newReading);
+            fsSetData(newReading);
+
+            // Update category definition to new meter id
+            const cat = categories.find(c => c.id === activeCategoryId);
+            if (cat) {
+                cat.meterNumber = newId;
+                fsSetCat(cat);
+            }
+
+            // Resolve notification if matches
+            const rDate = new Date(date);
+            const rMonth = rDate.getMonth();
+            const rYear = rDate.getFullYear();
+
+            const notifIndex = notifications.findIndex(n => !n.isResolved && n.categoryId === activeCategoryId && n.month === rMonth && n.year === rYear);
+            if (notifIndex > -1) {
+                notifications[notifIndex].isResolved = true;
+                fsSetNotif(notifications[notifIndex]);
+            }
+
+            closeModal('meterChangeModal');
+            showToast('Zählerwechsel verbucht', 'success');
+            renderView();
+        }
+
+
+        // --- Standard Reading CRUD ---
+        function openAddReadingModal() {
+            document.getElementById('addReadingForm').reset();
+            document.getElementById('readingDate').valueAsDate = new Date();
+            const modal = document.getElementById('addReadingModal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        }
+
+        function saveReading(e) {
+            e.preventDefault();
+            const date = document.getElementById('readingDate').value;
+            const value = parseFloat(document.getElementById('readingValue').value);
+
+            const newReading = {
+                id: 'rd_' + Date.now().toString(36),
+                categoryId: activeCategoryId,
+                date, value
+            };
+            appData.push(newReading);
+            fsSetData(newReading);
+
+            // Resolve notification if matches
+            const rDate = new Date(date);
+            const rMonth = rDate.getMonth();
+            const rYear = rDate.getFullYear();
+
+            const notifIndex = notifications.findIndex(n => !n.isResolved && n.categoryId === activeCategoryId && n.month === rMonth && n.year === rYear);
+            if (notifIndex > -1) {
+                notifications[notifIndex].isResolved = true;
+                fsSetNotif(notifications[notifIndex]);
+            }
+
+            closeModal('addReadingModal');
+            showToast('Zählerstand gespeichert', 'success');
+            renderView();
+        }
+
+        function promptDeleteEntry(id) {
+            document.getElementById('confirmTitle').textContent = 'Eintrag löschen?';
+            document.getElementById('confirmText').textContent = 'Möchtest du diese Ablesung entfernen? Wenn es ein Zählerwechsel ist, können Berechnungen verfälscht werden.';
+
+            const actionsDiv = document.getElementById('confirmActions');
+            actionsDiv.innerHTML = `
+                <button onclick="closeConfirmModal()" class="px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-white rounded-lg">Abbrechen</button>
+                <button onclick="executeDeleteEntry('${id}')" class="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-500 rounded-lg">Löschen</button>
+            `;
+            actionsDiv.className = 'flex justify-center gap-3';
+
+            const modal = document.getElementById('confirmModal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        }
+
+        function executeDeleteEntry(id) {
+            appData = appData.filter(d => d.id !== id);
+            fsDelData(id);
+            closeConfirmModal();
+            renderView();
+            showToast('Eintrag gelöscht', 'success');
+        }
+
+
+        // --- Export / Import ---
+        function openExportModal() {
+            const modal = document.getElementById('exportModal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        }
+
+        function executeExport() {
+            if (appData.length === 0) {
+                showToast('Keine Daten', 'error'); return;
+            }
+            // Join with category names
+            const exportData = appData.map(d => {
+                const cat = categories.find(c => c.id === d.categoryId);
+                return {
+                    Datum: d.date,
+                    Bereich: cat ? cat.name : 'Gelöscht',
+                    Zählernummer: cat ? (cat.meterNumber || '') : '',
+                    Einheit: cat ? cat.unit : '',
+                    Stand: d.value,
+                    Kommentar: cat ? (cat.comment || '').replace(/"/g, '""') : '',
+                    Notiz: d.isMeterChangeStart ? "Neuer Zähler Einbau" : (d.isMeterChangeEnd ? "Alter Zähler Ausbau" : (d.isInitial ? "Startwert" : ""))
+                };
+            });
+
+            const headers = ['Datum', 'Bereich', 'Zählernummer', 'Einheit', 'Stand', 'Kommentar', 'Notiz'];
+            const rows = exportData.map(d => `${d.Datum};"${d.Bereich}";"${d.Zählernummer}";"${d.Einheit}";${d.Stand.toString().replace('.', ',')};"${d.Kommentar}";"${d.Notiz}"`);
+            const csv = [headers.join(';'), ...rows].join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `VData_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            closeModal('exportModal');
+            showToast('Export abgeschlossen', 'success');
+        }
+
+        function setupCsvImport() {
+            const input = document.getElementById('csvFileInput');
+            input.addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    const text = event.target.result;
+                    const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+                    if (lines.length < 2) {
+                        showToast('Die CSV-Datei scheint leer zu sein.', 'error');
+                        input.value = '';
+                        return;
+                    }
+
+                    // Flexible CSV Parse logic: Split by semicolon, handles quotes if present
+                    let importedCount = 0;
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i];
+                        // Regex to split by semicolon, ignoring semicolons within quotes
+                        const parts = line.split(/;(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(p => p.replace(/^"|"$/g, '').trim());
+
+                        if (parts.length < 5) continue; // Skip invalid lines
+
+                        // Expected format based on new export: 'Datum', 'Bereich', 'Zählernummer', 'Einheit', 'Stand', 'Kommentar', 'Notiz'
+                        const datumRaw = parts[0];
+                        const bereichName = parts[1];
+                        const meterNumber = parts[2] || '';
+                        const einheit = parts[3];
+                        const standRaw = parts[4];
+                        const kommentar = parts[5] || '';
+                        const notiz = parts[6] || '';
+
+                        if (!bereichName || !datumRaw) continue;
+
+                        // Parse Date: Handles DD.MM.YY or YYYY-MM-DD
+                        let datum = datumRaw;
+                        if (datumRaw.includes('.')) {
+                            const [d, m, y] = datumRaw.split('.');
+                            const yearFull = y.length === 2 ? `20${y}` : y;
+                            datum = `${yearFull}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+                        } else if (datumRaw.includes('/')) {
+                            const [m, d, y] = datumRaw.split('/');
+                            const yearFull = y.length === 2 ? `20${y}` : y;
+                            datum = `${yearFull}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+                        }
+
+                        // Parse Stand (replace German comma with dot)
+                        const standVal = parseFloat(standRaw.replace(',', '.'));
+                        if (isNaN(standVal)) continue; // Skip invalid numbers
+
+                        // 1. Find or create category
+                        let cat = categories.find(c => c.name.toLowerCase() === bereichName.toLowerCase());
+                        if (!cat) {
+                            cat = {
+                                id: 'cat_' + Date.now().toString(36) + Math.random().toString(36).substr(2),
+                                name: bereichName,
+                                unit: einheit,
+                                meterNumber: meterNumber,
+                                comment: kommentar,
+                                icon: 'zap', // default
+                                color: 'blue', // default
+                                imageBase64: null
+                            };
+                            categories.push(cat);
+                            fsSetCat(cat);
+                        } else {
+                            // Update meta if missing
+                            let updated = false;
+                            if (!cat.meterNumber && meterNumber) { cat.meterNumber = meterNumber; updated = true; }
+                            if (!cat.comment && kommentar) { cat.comment = kommentar; updated = true; }
+                            if (updated) fsSetCat(cat);
+                        }
+
+                        // 2. Check for duplicate reading (same date, same value, same category)
+                        const isDuplicate = appData.some(d => d.categoryId === cat.id && d.date === datum && d.value === standVal);
+
+                        if (!isDuplicate) {
+                            // Determine flags based on note
+                            let isInitial = false;
+                            let isChangeStart = false;
+                            let isChangeEnd = false;
+
+                            if (notiz === "Startwert") isInitial = true;
+                            if (notiz === "Neuer Zähler Einbau") isChangeStart = true;
+                            if (notiz === "Alter Zähler Ausbau") isChangeEnd = true;
+
+                            const newRd = {
+                                id: 'rd_' + Date.now().toString(36) + Math.random().toString(36).substr(2),
+                                categoryId: cat.id,
+                                date: datum,
+                                value: standVal,
+                                isInitial: isInitial,
+                                isMeterChangeStart: isChangeStart,
+                                isMeterChangeEnd: isChangeEnd
+                            };
+                            appData.push(newRd);
+                            fsSetData(newRd);
+                            importedCount++;
+                        }
+                    }
+
+                    if (importedCount > 0) {
+                        showDashboard();
+                        showToast(`Erfolgreich ${importedCount} neue Zählerstände importiert.`, 'success');
+                    } else {
+                        showToast('Keine neuen Zählerstände gefunden (Duplikate übersprungen).', 'info');
+                    }
+                    input.value = '';
+                };
+                reader.onerror = function () {
+                    showToast('Fehler beim Lesen der Datei.', 'error');
+                    input.value = '';
+                };
+                reader.readAsText(file);
+            });
+        }
+
+
+        // --- Helpers ---
+        function closeModal(id) { document.getElementById(id).classList.remove('flex'); document.getElementById(id).classList.add('hidden'); }
+        function closeConfirmModal() { closeModal('confirmModal'); }
+
+        function formatDate(ds) {
+            try { return new Date(ds).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
+            catch (e) { return ds; }
+        }
+
+        function toBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        function getStyleClasses(color) {
+            const map = {
+                'blue': { text: 'text-blue-400', bg: 'bg-blue-400/10', hex: '#60a5fa' },
+                'red': { text: 'text-red-400', bg: 'bg-red-400/10', hex: '#f87171' },
+                'yellow': { text: 'text-yellow-400', bg: 'bg-yellow-400/10', hex: '#facc15' },
+                'orange': { text: 'text-orange-400', bg: 'bg-orange-400/10', hex: '#fb923c' },
+                'green': { text: 'text-green-400', bg: 'bg-green-400/10', hex: '#4ade80' },
+                'cyan': { text: 'text-cyan-400', bg: 'bg-cyan-400/10', hex: '#22d3ee' }
+            };
+            return map[color] || map['blue'];
+        }
+
+        function showToast(message, type = 'info') {
+            const c = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            let icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'alert-triangle' : (type === 'loading' ? 'loader-2' : 'info'));
+            let iColor = type === 'success' ? 'text-green-400' : (type === 'error' ? 'text-red-400' : 'text-blue-400');
+            let extraClass = type === 'loading' ? 'animate-spin' : '';
+
+            t.className = `flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg bg-gray-800 border border-gray-700 toast-enter pointer-events-auto`;
+            t.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5 ${iColor} ${extraClass}"></i><span class="text-sm font-medium text-white shadow-sm">${message}</span>`;
+            c.appendChild(t); lucide.createIcons();
+
+            // Return element if caller wants to dismiss it manually (e.g. loading toast)
+            if (type !== 'loading') {
+                setTimeout(() => dismissToast(t), 3000);
+            }
+            return t;
+        }
+
+        function dismissToast(toastEl) {
+            toastEl.classList.remove('toast-enter');
+            toastEl.classList.add('toast-leave');
+            setTimeout(() => toastEl.remove(), 300);
+        }
+
+        // --- Tesseract OCR Logic ---
+        function startOCR(targetInputId) {
+            activeOcrTargetInputId = targetInputId;
+            document.getElementById('ocrCameraInput').value = ''; // reset
+            document.getElementById('ocrCameraInput').click();
+        }
+
+        async function processOCRImage(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const loadingToast = showToast('Bild wird analysiert (Texterkennung läuft)...', 'loading');
+
+            try {
+                // 1. Read file as Image
+                const imgUrl = URL.createObjectURL(file);
+                const img = new Image();
+                img.src = imgUrl;
+
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                });
+                URL.revokeObjectURL(imgUrl);
+
+                // 2. Crop Image via Canvas (keep middle 20% vertically, 80% horizontally)
+                const cropWidth = img.width * 0.8;
+                const cropHeight = img.height * 0.2; // very narrow strip
+                const cropX = (img.width - cropWidth) / 2;
+                const cropY = (img.height - cropHeight) / 2;
+
+                const canvas = document.createElement('canvas');
+                canvas.width = cropWidth;
+                canvas.height = cropHeight;
+                const ctx = canvas.getContext('2d');
+
+                // Draw crop
+                ctx.drawImage(
+                    img,
+                    cropX, cropY, cropWidth, cropHeight, // source
+                    0, 0, cropWidth, cropHeight          // destination
+                );
+
+                const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+                // 3. Tesseract parsing on cropped image
+                const worker = await Tesseract.createWorker('eng'); // 'eng' often better for raw numbers/digits than 'deu'
+                const result = await worker.recognize(croppedDataUrl);
+                const text = result.data.text;
+                await worker.terminate();
+
+                dismissToast(loadingToast);
+
+                // Regex: Find longest/best continuous number sequence (can contain . or , for decimals). Allow spaces inside numbers occasionally
+                const cleanedText = text.replace(/\s+/g, ''); // strip all spaces first
+                const matches = cleanedText.match(/\d+([\.,]\d+)?/g);
+
+                if (matches && matches.length > 0) {
+                    // Pick the longest string (assuming meter runs into multiple digits like 12345.6)
+                    let bestMatch = matches.reduce((a, b) => a.length > b.length ? a : b);
+                    let val = bestMatch.replace(',', '.'); // normalize to float string
+                    const floatVal = parseFloat(val);
+
+                    if (!isNaN(floatVal)) {
+                        document.getElementById(activeOcrTargetInputId).value = floatVal.toFixed(2);
+                        showToast(`Erkannte Zahl: ${floatVal.toFixed(2)}`, 'success');
+                    } else {
+                        showToast('Zahl erkannt aber ungültig im Bildausschnitt.', 'error');
+                    }
+                } else {
+                    showToast('Es konnte keine Zahl in der Bildmitte erkannt werden.', 'error');
+                }
+            } catch (err) {
+                console.error('OCR Error', err);
+                dismissToast(loadingToast);
+                showToast('Fehler bei der Texterkennung.', 'error');
+            }
+        }
+    </script>
+</body>
+
+</html>
+```
