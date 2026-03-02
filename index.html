@@ -2324,20 +2324,50 @@
                 0, 0, cropWidth, cropHeight
             );
 
+            // Image Preprocessing: Grayscale and Increased Contrast
+            // This makes the text pop and removes color noise for Tesseract
+            const imgData = cropCtx.getImageData(0, 0, cropWidth, cropHeight);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                // Calculate Luminance
+                const luma = data[i] * 0.2126 + data[i + 1] * 0.7152 + data[i + 2] * 0.0722;
+
+                // Boost contrast (factor of 1.5)
+                const contrastFactor = 1.5;
+                let c = ((luma - 128) * contrastFactor) + 128;
+                c = Math.max(0, Math.min(255, c)); // clamp
+
+                data[i] = c;
+                data[i + 1] = c;
+                data[i + 2] = c;
+            }
+            cropCtx.putImageData(imgData, 0, 0);
+
             // Close camera UI immediately so user can see progress toast
             closeOcrCamera();
 
             const loadingToast = showToast('Zahlen werden erkannt...', 'loading');
 
             try {
-                console.log("Starting Tesseract recognition on cropped canvas...");
-                const result = await Tesseract.recognize(
-                    cropCanvas,
-                    'eng',
-                    { logger: m => console.log(m) }
-                );
+                console.log("Starting Tesseract recognition optimized for numbers...");
+
+                // Create worker explicitly to set custom parameters
+                const worker = await Tesseract.createWorker('eng', 1, {
+                    logger: m => console.log(m)
+                });
+
+                await worker.setParameters({
+                    // Only recognize numbers, commas, and dots to prevent alphabet hallucinations
+                    tessedit_char_whitelist: '0123456789.,',
+                    // Page Segmentation Mode 7: Treat the image as a single text line
+                    tessedit_pageseg_mode: '7',
+                });
+
+                const result = await worker.recognize(cropCanvas);
                 const text = result.data.text;
                 console.log("OCR Recognition finished:", text);
+
+                await worker.terminate();
 
                 dismissToast(loadingToast);
 
