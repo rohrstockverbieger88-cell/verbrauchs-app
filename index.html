@@ -625,7 +625,7 @@
                         <div class="relative">
                             <input type="number" step="0.01" id="mcNewStartValue" required placeholder="0"
                                 class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 pr-10 outline-none focus:border-blue-500 text-sm font-mono text-green-300">
-                            <button type="button" onclick="startOCR('mcNewStartValue')"
+                            <button type="button" onclick="openOcrCamera('mcNewStartValue')"
                                 class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-400 p-1 bg-gray-700 rounded-md transition-colors"
                                 title="Kamera (OCR)">
                                 <i data-lucide="camera" class="w-4 h-4"></i>
@@ -741,7 +741,7 @@
                         <div class="relative">
                             <input type="number" step="0.01" id="readingValue" required
                                 class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 pr-12 outline-none focus:border-primary-500 font-mono text-lg">
-                            <button type="button" onclick="startOCR('readingValue')"
+                            <button type="button" onclick="openOcrCamera('readingValue')"
                                 class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary-400 p-1.5 bg-gray-700 hover:bg-gray-600 rounded-md transition-colors"
                                 title="Foto aufnehmen (Texterkennung)">
                                 <i data-lucide="camera" class="w-5 h-5"></i>
@@ -908,9 +908,43 @@
     <!-- Toast Container -->
     <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Hidden Camera OCR Input -->
-    <input type="file" id="ocrCameraInput" accept="image/*" capture="environment" class="hidden"
-        onchange="processOCRImage(event)">
+    <!-- OCR Camera Modal (WebRTC) -->
+    <div id="ocrCameraModal" class="fixed inset-0 z-[60] hidden flex-col bg-black">
+        <!-- Close Button -->
+        <button onclick="closeOcrCamera()"
+            class="absolute top-6 right-6 z-10 p-2 bg-gray-900/50 rounded-full text-white hover:bg-gray-800">
+            <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+
+        <!-- Video Feed -->
+        <div class="relative w-full flex-1 flex items-center justify-center overflow-hidden bg-black">
+            <video id="ocrVideoFeed" class="absolute w-full h-full object-cover" playsinline autoplay></video>
+
+            <!-- Target Overlay (Darkened Background with Clear Center) -->
+            <div class="absolute inset-0 pointer-events-none flex flex-col">
+                <div class="flex-1 bg-black/60 backdrop-blur-[2px]"></div>
+                <!-- The narrow clear scanning zone -->
+                <div class="h-24 w-full relative border-y-2 border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+                    <div class="absolute inset-0 border-x-2 border-green-500 mx-12"></div>
+                </div>
+                <div class="flex-1 bg-black/60 relative backdrop-blur-[2px]">
+                    <p class="absolute top-4 w-full text-center text-white/80 text-sm font-medium">Ziffern im grünen
+                        Rahmen ausrichten</p>
+                </div>
+            </div>
+
+            <!-- Hidden canvas for cropping -->
+            <canvas id="ocrSecretCanvas" class="hidden"></canvas>
+        </div>
+
+        <!-- Controls -->
+        <div class="h-32 bg-black pb-safe flex items-center justify-center">
+            <button onclick="captureAndProcessOcr()"
+                class="w-16 h-16 rounded-full border-4 border-gray-400 bg-white hover:bg-gray-200 transition-colors flex items-center justify-center focus:outline-none">
+                <i data-lucide="camera" class="w-6 h-6 text-black"></i>
+            </button>
+        </div>
+    </div>
 
     <!-- Firebase SDK (compat removed) -->
 
@@ -2196,75 +2230,116 @@
                 setTimeout(() => dismissToast(t), 3000);
             }
             return t;
-        }
-
-        function dismissToast(toastEl) {
-            toastEl.classList.remove('toast-enter');
-            toastEl.classList.add('toast-leave');
             setTimeout(() => toastEl.remove(), 300);
         }
 
-        // --- Tesseract OCR Logic ---
-        function startOCR(targetInputId) {
+        // ==========================================
+        // OCR & WebRTC Camera Logic
+        // ==========================================
+        let ocrVideoStream = null;
+
+        async function openOcrCamera(targetInputId) {
+            console.log("Opening OCR Camera for target:", targetInputId);
             activeOcrTargetInputId = targetInputId;
-            document.getElementById('ocrCameraInput').value = ''; // reset
-            document.getElementById('ocrCameraInput').click();
-        }
+            const modal = document.getElementById('ocrCameraModal');
+            const video = document.getElementById('ocrVideoFeed');
 
-        async function processOCRImage(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
 
-            const loadingToast = showToast('Bild wird analysiert (Texterkennung läuft)...', 'loading');
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.error("WebRTC getUserMedia not supported in this browser.");
+                showToast("Kamera-Feed wird im aktuellen Browser nicht unterstützt.", "error");
+                closeOcrCamera();
+                return;
+            }
 
             try {
-                // 1. Read file as Image
-                const imgUrl = URL.createObjectURL(file);
-                const img = new Image();
-                img.src = imgUrl;
-
-                await new Promise((resolve, reject) => {
-                    img.onload = resolve;
-                    img.onerror = reject;
+                // Request back camera
+                console.log("Requesting camera permissions...");
+                ocrVideoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' },
+                    audio: false
                 });
-                URL.revokeObjectURL(imgUrl);
+                console.log("Camera access granted, playing video.");
+                video.srcObject = ocrVideoStream;
+            } catch (err) {
+                console.error("Camera access denied or unavailable", err);
+                showToast("Kamerazugriff verweigert oder nicht verfügbar.", "error");
+                closeOcrCamera();
+            }
+        }
 
-                // 2. Crop Image via Canvas (keep middle 20% vertically, 80% horizontally)
-                const cropWidth = img.width * 0.8;
-                const cropHeight = img.height * 0.2; // very narrow strip
-                const cropX = (img.width - cropWidth) / 2;
-                const cropY = (img.height - cropHeight) / 2;
+        function closeOcrCamera() {
+            const modal = document.getElementById('ocrCameraModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
 
-                const canvas = document.createElement('canvas');
-                canvas.width = cropWidth;
-                canvas.height = cropHeight;
-                const ctx = canvas.getContext('2d');
+            // Stop all video tracks to free camera hardware
+            if (ocrVideoStream) {
+                ocrVideoStream.getTracks().forEach(track => track.stop());
+                ocrVideoStream = null;
+            }
+        }
 
-                // Draw crop
-                ctx.drawImage(
-                    img,
-                    cropX, cropY, cropWidth, cropHeight, // source
-                    0, 0, cropWidth, cropHeight          // destination
-                );
+        async function captureAndProcessOcr() {
+            if (!ocrVideoStream) return;
 
-                const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            const video = document.getElementById('ocrVideoFeed');
+            const canvas = document.getElementById('ocrSecretCanvas');
+            const ctx = canvas.getContext('2d');
 
-                // 3. Tesseract parsing on cropped image
-                const worker = await Tesseract.createWorker('eng'); // 'eng' often better for raw numbers/digits than 'deu'
+            // Set canvas to actual video resolution
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Draw current video frame to canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // The overlay logic: The clear area is a 6rem (96px) tall box in the vertical center.
+            // We need to map this CSS overlay ratio back to the actual video resolution to crop correctly.
+            // Assumption: video is covering the whole screen object-fit cover.
+            // For simplicity and robustness regardless of screen aspect ratio vs video aspect ratio,
+            // we will crop a horizontal box directly from the center of the video source itself.
+            // We take 100% of the width (minus a small margin) and 20% of the height from the dead center.
+
+            const cropWidth = canvas.width * 0.8;
+            const cropHeight = canvas.height * 0.15; // 15% vertical slice
+            const cropX = (canvas.width - cropWidth) / 2;
+            const cropY = (canvas.height - cropHeight) / 2;
+
+            const cropCanvas = document.createElement('canvas');
+            cropCanvas.width = cropWidth;
+            cropCanvas.height = cropHeight;
+            const cropCtx = cropCanvas.getContext('2d');
+
+            cropCtx.drawImage(
+                canvas,
+                cropX, cropY, cropWidth, cropHeight,
+                0, 0, cropWidth, cropHeight
+            );
+
+            const croppedDataUrl = cropCanvas.toDataURL('image/jpeg', 0.9);
+
+            // Close camera UI immediately so user can see progress toast
+            closeOcrCamera();
+
+            const loadingToast = showToast('Zahlen werden erkannt...', 'loading');
+
+            try {
+                const worker = await Tesseract.createWorker('eng');
                 const result = await worker.recognize(croppedDataUrl);
                 const text = result.data.text;
                 await worker.terminate();
 
                 dismissToast(loadingToast);
 
-                // Regex: Find longest/best continuous number sequence (can contain . or , for decimals). Allow spaces inside numbers occasionally
-                const cleanedText = text.replace(/\s+/g, ''); // strip all spaces first
+                const cleanedText = text.replace(/\s+/g, '');
                 const matches = cleanedText.match(/\d+([\.,]\d+)?/g);
 
                 if (matches && matches.length > 0) {
-                    // Pick the longest string (assuming meter runs into multiple digits like 12345.6)
                     let bestMatch = matches.reduce((a, b) => a.length > b.length ? a : b);
-                    let val = bestMatch.replace(',', '.'); // normalize to float string
+                    let val = bestMatch.replace(',', '.');
                     const floatVal = parseFloat(val);
 
                     if (!isNaN(floatVal)) {
@@ -2274,7 +2349,7 @@
                         showToast('Zahl erkannt aber ungültig im Bildausschnitt.', 'error');
                     }
                 } else {
-                    showToast('Es konnte keine Zahl in der Bildmitte erkannt werden.', 'error');
+                    showToast('Es konnte keine Zahl im Sichtfeld erkannt werden.', 'error');
                 }
             } catch (err) {
                 console.error('OCR Error', err);
