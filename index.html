@@ -2292,6 +2292,12 @@
             if (!ocrVideoStream) return;
 
             const video = document.getElementById('ocrVideoFeed');
+
+            if (!video.videoWidth || !video.videoHeight) {
+                showToast("Kamera wird noch initialisiert, bitte warten.", "info");
+                return;
+            }
+
             const canvas = document.getElementById('ocrSecretCanvas');
             const ctx = canvas.getContext('2d');
 
@@ -2301,13 +2307,6 @@
 
             // Draw current video frame to canvas
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // The overlay logic: The clear area is a 6rem (96px) tall box in the vertical center.
-            // We need to map this CSS overlay ratio back to the actual video resolution to crop correctly.
-            // Assumption: video is covering the whole screen object-fit cover.
-            // For simplicity and robustness regardless of screen aspect ratio vs video aspect ratio,
-            // we will crop a horizontal box directly from the center of the video source itself.
-            // We take 100% of the width (minus a small margin) and 20% of the height from the dead center.
 
             const cropWidth = canvas.width * 0.8;
             const cropHeight = canvas.height * 0.15; // 15% vertical slice
@@ -2325,18 +2324,20 @@
                 0, 0, cropWidth, cropHeight
             );
 
-            const croppedDataUrl = cropCanvas.toDataURL('image/jpeg', 0.9);
-
             // Close camera UI immediately so user can see progress toast
             closeOcrCamera();
 
             const loadingToast = showToast('Zahlen werden erkannt...', 'loading');
 
             try {
-                const worker = await Tesseract.createWorker('eng');
-                const result = await worker.recognize(croppedDataUrl);
+                console.log("Starting Tesseract recognition on cropped canvas...");
+                const result = await Tesseract.recognize(
+                    cropCanvas,
+                    'eng',
+                    { logger: m => console.log(m) }
+                );
                 const text = result.data.text;
-                await worker.terminate();
+                console.log("OCR Recognition finished:", text);
 
                 dismissToast(loadingToast);
 
@@ -2367,4 +2368,3 @@
 </body>
 
 </html>
-```
