@@ -982,6 +982,7 @@
             authLoadingView.classList.add('hidden');
 
             if (user) {
+                currentUser = user; // Fix: Assign global user object
                 // Determine Admin Role
                 try {
                     const userDoc = await db.collection('users').doc(user.uid).get();
@@ -1006,6 +1007,7 @@
                 initIconGrid();
                 renderView();
             } else {
+                currentUser = null;
                 isAdmin = false;
                 appContainer.classList.add('hidden');
                 appContainer.classList.remove('flex');
