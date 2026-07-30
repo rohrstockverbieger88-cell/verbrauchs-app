@@ -966,6 +966,11 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // Enable offline persistence for instant loading from cache
+        db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+            console.warn("Firestore persistence notice:", err.code);
+        });
+
         // Secondary App for Admin User Creation without logging out
         const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryApp");
 
@@ -1016,10 +1021,15 @@
             authLoadingView.classList.add('hidden');
 
             if (user) {
-                currentUser = user; // Fix: Assign global user object
-                // Determine Admin Role
-                try {
-                    const userDoc = await db.collection('users').doc(user.uid).get();
+                currentUser = user;
+                
+                loginView.classList.add('hidden');
+                adminSetupView.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                appContainer.classList.add('flex');
+
+                // Determine Admin Role in parallel with data loading
+                const rolePromise = db.collection('users').doc(user.uid).get().then(userDoc => {
                     if (userDoc.exists && userDoc.data().role === 'admin') {
                         isAdmin = true;
                         document.getElementById('navAdminBtn').classList.remove('hidden');
@@ -1027,16 +1037,11 @@
                         isAdmin = false;
                         document.getElementById('navAdminBtn').classList.add('hidden');
                     }
-                } catch (e) {
+                }).catch(e => {
                     console.error("Could not fetch user role", e);
-                }
+                });
 
-                loginView.classList.add('hidden');
-                adminSetupView.classList.add('hidden');
-                appContainer.classList.remove('hidden');
-                appContainer.classList.add('flex');
-
-                await loadStateFromFirestore();
+                await Promise.all([rolePromise, loadStateFromFirestore()]);
                 setupCsvImport();
                 initIconGrid();
                 renderView();
@@ -1135,20 +1140,24 @@
 
         async function loadStateFromFirestore() {
             if (!currentUser) return;
+            const toast = showToast("Lade Daten...", "loading");
             try {
-                const toast = showToast("Lade Daten...", "loading");
                 const uid = currentUser.uid;
 
-                const cSnap = await db.collection('users').doc(uid).collection('categories').get();
+                // Load all collections in parallel for maximum speed
+                const [cSnap, dSnap, nSnap] = await Promise.all([
+                    db.collection('users').doc(uid).collection('categories').get(),
+                    db.collection('users').doc(uid).collection('appData').get(),
+                    db.collection('users').doc(uid).collection('notifications').get()
+                ]);
+
                 categories = [];
                 cSnap.forEach(d => categories.push(d.data()));
 
-                const dSnap = await db.collection('users').doc(uid).collection('appData').get();
                 appData = [];
                 dSnap.forEach(d => appData.push(d.data()));
                 appData.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-                const nSnap = await db.collection('users').doc(uid).collection('notifications').get();
                 notifications = [];
                 nSnap.forEach(d => notifications.push(d.data()));
 
@@ -1156,6 +1165,7 @@
                 checkAndGenerateNotifications();
             } catch (err) {
                 console.error("Error loading state from Firestore:", err);
+                dismissToast(toast);
                 showToast("Fehler beim Laden der Daten.", "error");
             }
         }
@@ -1835,10 +1845,16 @@
             renderView(); // re-renders detail view since activeCategoryId is set
         }
 
-        function promptDeleteCurrentCategory() {
+        function promptDeleteCategory(catId) {
+            const targetId = catId || activeCategoryId;
+            const cat = categories.find(c => c.id === targetId);
+            if (!cat) return;
+
+            activeCategoryId = targetId;
             closeModal('categoryOptionsModal');
-            document.getElementById('confirmTitle').textContent = 'Bereich unwiderruflich löschen?';
-            document.getElementById('confirmText').textContent = 'Möchtest du vor dem Löschen eine CSV-Datei mit allen Zählerständen dieses Bereichs exportieren?';
+
+            document.getElementById('confirmTitle').textContent = `Bereich "${cat.name}" löschen?`;
+            document.getElementById('confirmText').textContent = `Möchtest du den Bereich "${cat.name}" inkl. aller zugehörigen Zählerstände wirklich löschen? Du kannst vor dem Löschen optional eine Sicherung als CSV-Datei herunterladen.`;
 
             const actionsDiv = document.getElementById('confirmActions');
             actionsDiv.innerHTML = `
@@ -1851,6 +1867,10 @@
 
             const modal = document.getElementById('confirmModal');
             modal.classList.remove('hidden'); modal.classList.add('flex');
+        }
+
+        function promptDeleteCurrentCategory() {
+            promptDeleteCategory(activeCategoryId);
         }
 
         function executeDeleteCategory(exportCsv) {
