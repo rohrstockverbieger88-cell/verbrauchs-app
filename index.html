@@ -1035,7 +1035,23 @@
 
                 // Determine Admin Role in parallel with data loading
                 const rolePromise = db.collection('users').doc(user.uid).get().then(userDoc => {
-                    if (userDoc.exists && userDoc.data().role === 'admin') {
+                    let role = 'user';
+                    if (userDoc.exists) {
+                        role = userDoc.data().role;
+                    }
+                    
+                    // Fallback / Auto-Repair for the main admin email
+                    if (user.email === 'bjoern_herold@web.de') {
+                        role = 'admin';
+                        // Ensure the document exists in Firestore with the new UID
+                        db.collection('users').doc(user.uid).set({
+                            email: user.email,
+                            role: 'admin',
+                            status: 'active'
+                        }, { merge: true });
+                    }
+
+                    if (role === 'admin') {
                         isAdmin = true;
                         document.getElementById('navAdminBtn').classList.remove('hidden');
                     } else {
