@@ -31,33 +31,20 @@ self.addEventListener('fetch', event => {
   // Don't cache Firestore API calls
   if (event.request.url.includes('firestore.googleapis.com')) return;
 
+  // Network First, fallback to cache strategy
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request).then(
-          function(response) {
-            // Check if we received a valid response
-            if(!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            // IMPORTANT: Clone the response. A response is a stream
-            // and because we want the browser to consume the response
-            // as well as the cache consuming the response, we need
-            // to clone it so we have two streams.
-            var responseToCache = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then(function(cache) {
-                cache.put(event.request, responseToCache);
-              });
-
-            return response;
-          }
-        );
-      })
+    fetch(event.request).then(response => {
+      // If we got a valid response, clone it and update the cache
+      if(response && response.status === 200 && response.type === 'basic') {
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseToCache);
+        });
+      }
+      return response;
+    }).catch(() => {
+      // If network fails (offline), return from cache
+      return caches.match(event.request);
+    })
   );
 });
