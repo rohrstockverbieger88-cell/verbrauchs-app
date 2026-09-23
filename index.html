@@ -255,20 +255,20 @@
                                 </button>
                                 <div
                                     class="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
-                                    <button onclick="openAddCategoryModal()" id="navAddBtn"
+                                    <button onclick="closeMobileMenuHack(); openAddCategoryModal()" id="navAddBtn"
                                         class="w-full text-left px-4 py-2 text-sm text-white hover:bg-primary-600 flex items-center gap-2 border-b border-gray-700">
                                         <i data-lucide="plus-circle" class="w-4 h-4 whitespace-nowrap"></i> Bereich
                                         hinzufügen
                                     </button>
-                                    <button onclick="document.getElementById('csvFileInput').click()"
+                                    <button onclick="closeMobileMenuHack(); document.getElementById('csvFileInput').click()"
                                         class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2">
                                         <i data-lucide="upload" class="w-4 h-4"></i> Import (V1)
                                     </button>
-                                    <button onclick="openExportModal()"
+                                    <button onclick="closeMobileMenuHack(); openExportModal()"
                                         class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
                                         <i data-lucide="download" class="w-4 h-4"></i> Export CSV
                                     </button>
-                                    <button onclick="openChangePasswordModal()"
+                                    <button onclick="closeMobileMenuHack(); openChangePasswordModal()"
                                         class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
                                         <i data-lucide="key" class="w-4 h-4"></i> Passwort ändern
                                     </button>
@@ -1210,7 +1210,20 @@
             appData.sort((a, b) => new Date(b.date) - new Date(a.date));
             updateNotificationUI();
         }
+        function closeMobileMenuHack() {
+            // Force mobile browsers to drop the hover state of the CSS menu
+            const activeElement = document.activeElement;
+            if (activeElement) activeElement.blur();
+            
+            const dropdown = document.querySelector('.group .absolute.right-0');
+            if (dropdown) {
+                dropdown.style.display = 'none';
+                setTimeout(() => { dropdown.style.display = ''; }, 150);
+            }
+        }
+
         function showAdminDashboard() {
+            closeMobileMenuHack();
             if (!isAdmin) return showToast("Keine Berechtigung", "error");
             document.getElementById('dashboardView').classList.add('hidden');
             document.getElementById('detailView').classList.add('hidden');
@@ -1234,9 +1247,9 @@
                             <span class="px-2 py-1 bg-${u.role === 'admin' ? 'primary' : 'gray'}-500/20 text-${u.role === 'admin' ? 'primary' : 'gray'}-400 text-xs rounded border border-${u.role === 'admin' ? 'primary' : 'gray'}-500/30 uppercase tracking-wider font-semibold">${u.role}</span>
                         </td>
                         <td class="py-3 pl-4 text-right">
-                            ${u.role !== 'admin' ? `
+                            ${doc.id !== firebase.auth().currentUser.uid ? `
                                 <button onclick="resetUserPassword('${doc.id}', '${u.email}')" class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors" title="Passwort-Reset E-Mail senden"><i data-lucide="mail" class="w-4 h-4"></i></button>
-                                <button onclick="deleteUserAccount('${doc.id}', '${u.email}')" class="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors ml-1" title="Benutzer deaktivieren"><i data-lucide="user-x" class="w-4 h-4"></i></button>
+                                <button onclick="deleteUserAccount('${doc.id}', '${u.email}')" class="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors ml-1" title="Benutzer löschen"><i data-lucide="user-x" class="w-4 h-4"></i></button>
                             ` : ''}
                         </td>
                     `;
@@ -1451,6 +1464,7 @@
         }
 
         function showDashboard() {
+            closeMobileMenuHack();
             activeCategoryId = null;
             renderView();
         }
