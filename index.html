@@ -418,6 +418,49 @@
                     </section>
                 </div>
             </div>
+        
+
+        <!-- ================== ADMIN DASHBOARD VIEW ================== -->
+        <div id="adminDashboardView" class="hidden space-y-6 fade-in px-4 py-8 max-w-7xl mx-auto w-full">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                <div class="flex items-center gap-4">
+                    <button onclick="showDashboard()"
+                        class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                        title="Zurück">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    </button>
+                    <h2 class="text-2xl font-bold flex items-center gap-2">
+                        <i data-lucide="shield-check" class="w-6 h-6 text-primary-500"></i> Benutzerverwaltung
+                    </h2>
+                </div>
+                <button onclick="openCreateUserModal()"
+                    class="bg-primary-600 hover:bg-primary-500 text-white rounded-lg px-4 py-2.5 flex items-center gap-2 shadow-lg shadow-primary-500/20 font-medium">
+                    <i data-lucide="user-plus" class="w-5 h-5"></i> Neuen Benutzer anlegen
+                </button>
+            </div>
+
+            <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Registrierte Benutzer</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr
+                                    class="text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-800">
+                                    <th class="pb-3 pr-4">Email</th>
+                                    <th class="pb-3 px-4">Rolle</th>
+                                    <th class="pb-3 pl-4 text-right">Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminUsersList" class="divide-y divide-gray-800 text-sm">
+                                <!-- JS Injected Users -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         </main>
 
         <!-- ================== MODALS ================== -->
@@ -832,50 +875,7 @@
                     </button>
                 </form>
             </div>
-        </div>
-
-        <!-- ================== ADMIN DASHBOARD VIEW ================== -->
-        <div id="adminDashboardView" class="hidden space-y-6 fade-in px-4 py-8 max-w-7xl mx-auto w-full">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-                <div class="flex items-center gap-4">
-                    <button onclick="showDashboard()"
-                        class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-                        title="Zurück">
-                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                    </button>
-                    <h2 class="text-2xl font-bold flex items-center gap-2">
-                        <i data-lucide="shield-check" class="w-6 h-6 text-primary-500"></i> Benutzerverwaltung
-                    </h2>
-                </div>
-                <button onclick="openCreateUserModal()"
-                    class="bg-primary-600 hover:bg-primary-500 text-white rounded-lg px-4 py-2.5 flex items-center gap-2 shadow-lg shadow-primary-500/20 font-medium">
-                    <i data-lucide="user-plus" class="w-5 h-5"></i> Neuen Benutzer anlegen
-                </button>
-            </div>
-
-            <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-white mb-4">Registrierte Benutzer</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr
-                                    class="text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-800">
-                                    <th class="pb-3 pr-4">Email</th>
-                                    <th class="pb-3 px-4">Rolle</th>
-                                    <th class="pb-3 pl-4 text-right">Aktionen</th>
-                                </tr>
-                            </thead>
-                            <tbody id="adminUsersList" class="divide-y divide-gray-800 text-sm">
-                                <!-- JS Injected Users -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Create User Modal -->
+        </div><!-- Create User Modal -->
         <div id="createUserModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
             <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity"
                 onclick="closeModal('createUserModal')"></div>
