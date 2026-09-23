@@ -1279,11 +1279,11 @@
         }
 
         async function deleteUserAccount(uid, email) {
-            if (confirm(`Soll der Nutzer ${email} deaktiviert werden? (Endgültiges Löschen erfordert Firebase Admin SDK)`)) {
+            if (confirm(`Soll der Nutzer ${email} wirklich aus der Datenbank-Liste gelöscht werden? (Hinweis: Den Login in Firebase Auth hast du bereits gelöscht)`)) {
                 try {
-                    // Soft-delete user so they fail security rules
-                    await db.collection('users').doc(uid).update({ status: 'deleted' });
-                    showToast("Nutzer deaktiviert.", "success");
+                    // Hard-delete user document from Firestore to remove from UI list
+                    await db.collection('users').doc(uid).delete();
+                    showToast("Nutzer aus der Liste entfernt.", "success");
                     loadAdminUsers();
                 } catch (e) {
                     showToast("Fehler: " + e.message, "error");
