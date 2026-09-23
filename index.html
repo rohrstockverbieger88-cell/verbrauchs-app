@@ -253,7 +253,7 @@
                                     <i data-lucide="menu" class="w-4 h-4"></i><span
                                         class="hidden sm:inline">Optionen</span>
                                 </button>
-                                <div
+                                <div id="mobileMenuDropdown"
                                     class="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
                                     <button onclick="closeMobileMenuHack(); openAddCategoryModal()" id="navAddBtn"
                                         class="w-full text-left px-4 py-2 text-sm text-white hover:bg-primary-600 flex items-center gap-2 border-b border-gray-700">
@@ -1211,12 +1211,11 @@
             updateNotificationUI();
         }
         function closeMobileMenuHack() {
-            // Der sicherste Weg auf dem iPhone, um ein Hover-Menü zu schließen:
-            // Wir entfernen kurz die CSS-Klasse "group", wodurch das Menü sofort zuklappt.
-            const group = document.querySelector('.group');
-            if (group) {
-                group.classList.remove('group');
-                setTimeout(() => { group.classList.add('group'); }, 300);
+            // Harter Fix für alle mobilen Browser: Wir verstecken das Menü explizit für 100ms
+            const menu = document.getElementById('mobileMenuDropdown');
+            if (menu) {
+                menu.classList.add('hidden');
+                setTimeout(() => { menu.classList.remove('hidden'); }, 100);
             }
         }
 
