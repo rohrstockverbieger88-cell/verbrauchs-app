@@ -1211,14 +1211,12 @@
             updateNotificationUI();
         }
         function closeMobileMenuHack() {
-            // Force mobile browsers to drop the hover state of the CSS menu
-            const activeElement = document.activeElement;
-            if (activeElement) activeElement.blur();
-            
-            const dropdown = document.querySelector('.group .absolute.right-0');
-            if (dropdown) {
-                dropdown.style.display = 'none';
-                setTimeout(() => { dropdown.style.display = ''; }, 150);
+            // Der sicherste Weg auf dem iPhone, um ein Hover-Menü zu schließen:
+            // Wir entfernen kurz die CSS-Klasse "group", wodurch das Menü sofort zuklappt.
+            const group = document.querySelector('.group');
+            if (group) {
+                group.classList.remove('group');
+                setTimeout(() => { group.classList.add('group'); }, 300);
             }
         }
 
