@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Metraxo - Impressum</title>
+    <link rel="icon" type="image/svg+xml" href="./icon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
@@ -12,7 +13,7 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
-    <nav class="glass-card border-x-0 border-t-0 p-4">
+    <nav class="glass-card border-x-0 border-t-0 p-4 sticky top-0 z-50">
         <div class="max-w-3xl mx-auto flex items-center gap-3">
             <a href="index.html" class="flex items-center gap-2 hover:opacity-80 transition">
                 <img src="./icon.svg" class="w-8 h-8">
@@ -20,19 +21,44 @@
             </a>
         </div>
     </nav>
-    <main class="flex-1 max-w-3xl mx-auto p-8 w-full">
+    <main class="flex-1 max-w-3xl mx-auto p-8 w-full prose prose-invert">
         <h1 class="text-3xl font-bold mb-6">Impressum</h1>
+        
         <h2 class="text-xl font-semibold mb-2">Angaben gemäß § 5 TMG</h2>
-        <p class="mb-4 text-slate-300">
+        <p class="mb-6 text-slate-300 leading-relaxed">
             Björn Herold<br>
-            [Straße Hausnummer]<br>
-            [PLZ Ort]
+            Untere Dorfstraße 47<br>
+            02763 Zittau
         </p>
+        
         <h2 class="text-xl font-semibold mb-2">Kontakt</h2>
-        <p class="mb-4 text-slate-300">
-            E-Mail: bjoern_herold@web.de<br>
+        <p class="mb-8 text-slate-300 leading-relaxed">
+            E-Mail: rimshaker1988@gmx.de
         </p>
-        <p class="text-sm text-slate-400 mt-8">Da ich keinen Zugriff auf dein anderes Projekt habe, habe ich hier Platzhalter für deine Adresse eingefügt. Bitte passe diese Datei (impressum.html) entsprechend an!</p>
+
+        <h3 class="text-lg font-semibold mb-2">Verbraucherstreitbeilegung/Universalschlichtungsstelle</h3>
+        <p class="mb-6 text-slate-300 leading-relaxed">
+            Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.
+        </p>
+        
+        <h3 class="text-lg font-semibold mb-2">Haftung für Inhalte</h3>
+        <p class="mb-6 text-slate-300 leading-relaxed">
+            Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen.
+        </p>
+        
+        <h3 class="text-lg font-semibold mb-2">Haftung für Links</h3>
+        <p class="mb-6 text-slate-300 leading-relaxed">
+            Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich.
+        </p>
     </main>
+    
+    <footer class="border-t border-slate-800 py-6 mt-12 text-center text-slate-500 text-sm">
+        <div class="max-w-3xl mx-auto px-4 flex justify-center gap-6 mb-4">
+            <a href="impressum.html" class="hover:text-primary-400">Impressum</a>
+            <a href="datenschutz.html" class="hover:text-primary-400">Datenschutz</a>
+            <a href="agb.html" class="hover:text-primary-400">AGB</a>
+        </div>
+        <p>© 2026 Metraxo. Alle Rechte vorbehalten.</p>
+    </footer>
 </body>
 </html>

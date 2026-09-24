@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Metraxo - Datenschutzerklärung</title>
+    <link rel="icon" type="image/svg+xml" href="./icon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
@@ -12,7 +13,7 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
-    <nav class="glass-card border-x-0 border-t-0 p-4">
+    <nav class="glass-card border-x-0 border-t-0 p-4 sticky top-0 z-50">
         <div class="max-w-3xl mx-auto flex items-center gap-3">
             <a href="index.html" class="flex items-center gap-2 hover:opacity-80 transition">
                 <img src="./icon.svg" class="w-8 h-8">
@@ -21,16 +22,59 @@
         </div>
     </nav>
     <main class="flex-1 max-w-3xl mx-auto p-8 w-full prose prose-invert">
-        <h1 class="text-3xl font-bold mb-6">Datenschutzerklärung</h1>
-        <p class="mb-4 text-slate-300">
-            Der Schutz Ihrer persönlichen Daten ist uns ein besonderes Anliegen. Wir verarbeiten Ihre Daten daher ausschließlich auf Grundlage der gesetzlichen Bestimmungen (DSGVO, TKG 2003).
+        <h1 class="text-3xl font-bold mb-8">Datenschutzerklärung</h1>
+        
+        <h2 class="text-xl font-semibold mb-2">1. Datenschutz auf einen Blick</h2>
+        <h3 class="text-lg font-medium mt-4 mb-2">Allgemeine Hinweise</h3>
+        <p class="mb-4 text-slate-300 leading-relaxed">
+            Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen. Personenbezogene Daten sind alle Daten, mit denen Sie persönlich identifiziert werden können. Ausführliche Informationen zum Thema Datenschutz entnehmen Sie unserer unter diesem Text aufgeführten Datenschutzerklärung.
         </p>
-        <h2 class="text-xl font-semibold mt-6 mb-2">Google Firebase</h2>
-        <p class="mb-4 text-slate-300">
-            Wir verwenden Google Firebase zur Speicherung von Zählerständen und zur Authentifizierung. Firebase ist ein Dienst der Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland. 
-            Dabei können Daten an Server von Google in den USA übertragen werden.
+
+        <h3 class="text-lg font-medium mt-4 mb-2">Datenerfassung auf dieser Website</h3>
+        <p class="mb-4 text-slate-300 leading-relaxed">
+            <strong>Wer ist verantwortlich für die Datenerfassung auf dieser Website?</strong><br>
+            Die Datenverarbeitung auf dieser Website erfolgt durch den Websitebetreiber. Dessen Kontaktdaten können Sie dem Impressum dieser Website entnehmen.
         </p>
-        <p class="text-sm text-slate-400 mt-8">Hier können weitere Details zum Datenschutz ergänzt werden.</p>
+        <p class="mb-4 text-slate-300 leading-relaxed">
+            <strong>Wie erfassen wir Ihre Daten?</strong><br>
+            Ihre Daten werden zum einen dadurch erhoben, dass Sie uns diese mitteilen. Hierbei kann es sich z. B. um Daten handeln, die Sie bei der Registrierung (E-Mail-Adresse) oder der Nutzung unserer App (Zählerstände) eingeben. Andere Daten werden automatisch oder nach Ihrer Einwilligung beim Besuch der Website durch unsere IT-Systeme erfasst.
+        </p>
+        <p class="mb-6 text-slate-300 leading-relaxed">
+            <strong>Wofür nutzen wir Ihre Daten?</strong><br>
+            Ein Teil der Daten wird erhoben, um eine fehlerfreie Bereitstellung der App zu gewährleisten. Die Zählerstände und Fotos, die Sie hochladen, werden ausschließlich für Ihre persönliche Verbrauchsüberwachung verarbeitet.
+        </p>
+
+        <h2 class="text-xl font-semibold mb-2">2. Hosting und Cloud-Dienste</h2>
+        <h3 class="text-lg font-medium mt-4 mb-2">GitHub Pages</h3>
+        <p class="mb-4 text-slate-300 leading-relaxed">
+            Wir hosten unsere Website bei GitHub Pages. Anbieter ist die GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA. Wenn Sie unsere Website besuchen, erfasst GitHub Ihre IP-Adresse und weitere technische Metadaten. Die Verwendung von GitHub Pages erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO.
+        </p>
+        
+        <h3 class="text-lg font-medium mt-4 mb-2">Google Firebase (Auth & Firestore)</h3>
+        <p class="mb-6 text-slate-300 leading-relaxed">
+            Für die Benutzerverwaltung, Authentifizierung und die Speicherung Ihrer Zählerstände nutzen wir Google Firebase. Anbieter ist die Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland. 
+            Firebase speichert Ihre E-Mail-Adresse und ein verschlüsseltes Passwort (für den Login), sowie die von Ihnen eingegebenen Daten (z.B. Zählerstände, Namen, Bilder).
+            Ihre Daten werden in der Cloud gespeichert. Dies stellt ein berechtigtes Interesse im Sinne von Art. 6 Abs. 1 lit. f DSGVO dar, da wir Ihnen andernfalls diese Web-Applikation nicht anbieten könnten. Die Speicherung der Zählerdaten erfolgt auf Servern in Europa.
+        </p>
+
+        <h2 class="text-xl font-semibold mb-2">3. Verarbeitung Ihrer Zählerdaten & KI-Bildanalyse</h2>
+        <p class="mb-6 text-slate-300 leading-relaxed">
+            Metraxo bietet die Möglichkeit, Zählerstände per Foto automatisch zu erkennen. Die Bilderkennung wird dabei lokal auf Ihrem Endgerät (mittels Tesseract.js) verarbeitet, sodass das aufgenommene Bild selbst nicht an Server gesendet oder dort dauerhaft gespeichert werden muss, sondern lediglich der ermittelte Zählerstand an unsere Datenbank übermittelt wird, sofern Sie ihn bestätigen.
+        </p>
+
+        <h2 class="text-xl font-semibold mb-2">4. Speicherdauer & Löschung</h2>
+        <p class="mb-6 text-slate-300 leading-relaxed">
+            Soweit innerhalb dieser Datenschutzerklärung keine speziellere Speicherdauer genannt wurde, verbleiben Ihre personenbezogenen Daten bei uns, bis der Zweck für die Datenverarbeitung entfällt. Wenn Sie ein berechtigtes Löschersuchen geltend machen oder Ihre Einwilligung widerrufen bzw. Ihren Account löschen, werden Ihre Daten (inklusive aller Zählerstände) unwiderruflich aus unserer Firebase-Datenbank gelöscht.
+        </p>
     </main>
+    
+    <footer class="border-t border-slate-800 py-6 mt-12 text-center text-slate-500 text-sm">
+        <div class="max-w-3xl mx-auto px-4 flex justify-center gap-6 mb-4">
+            <a href="impressum.html" class="hover:text-primary-400">Impressum</a>
+            <a href="datenschutz.html" class="hover:text-primary-400">Datenschutz</a>
+            <a href="agb.html" class="hover:text-primary-400">AGB</a>
+        </div>
+        <p>© 2026 Metraxo. Alle Rechte vorbehalten.</p>
+    </footer>
 </body>
 </html>

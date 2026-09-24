@@ -1,7 +1,10 @@
-const CACHE_NAME = 'verbrauch-v2';
+const CACHE_NAME = 'verbrauch-v3';
 const urlsToCache = [
   './',
   './app.html',
+  './impressum.html',
+  './datenschutz.html',
+  './agb.html',
   './icon.svg',
   './manifest.json',
   'https://unpkg.com/lucide@latest',
