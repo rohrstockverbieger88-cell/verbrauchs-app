@@ -149,7 +149,7 @@
                 <img src="./icon.svg" class="w-8 h-8">
                 <span class="font-bold text-2xl tracking-tight text-white">Metraxo</span>
             </div>
-            <h2 class="text-xl font-bold text-center mb-6">Anmelden</h2>
+            <h2 class="text-xl font-bold text-center mb-6" id="loginFormTitle">Anmelden</h2>
             <form id="loginForm" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1">E-Mail</label>
@@ -157,15 +157,21 @@
                         class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1">Passwort</label>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-sm font-medium text-gray-400">Passwort</label>
+                        <button type="button" onclick="forgotPassword()" class="text-xs text-primary-500 hover:text-primary-400 transition">Passwort vergessen?</button>
+                    </div>
                     <input type="password" id="loginPassword" required
                         class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
                 </div>
-                <button type="submit"
-                    class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-3 rounded-lg flex justify-center items-center gap-2 shadow-lg hover:shadow-primary-500/20 transition-all">
+                <button type="submit" id="loginSubmitBtn"
+                    class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-3 rounded-lg flex justify-center items-center gap-2 shadow-lg hover:shadow-primary-500/20 transition-all mt-4">
                     <span>Anmelden</span>
                     <i data-lucide="log-in" class="w-4 h-4"></i>
                 </button>
+                <div class="text-center mt-4">
+                    <button type="button" onclick="toggleRegisterMode()" class="text-sm text-gray-400 hover:text-white transition">Noch kein Konto? <span class="text-primary-500">Registrieren</span></button>
+                </div>
             </form>
         </div>
     </div>
@@ -1087,14 +1093,50 @@
         });
 
         // Form Handlers
+        let isRegisterMode = false;
+        function toggleRegisterMode() {
+            isRegisterMode = !isRegisterMode;
+            const title = document.getElementById('loginFormTitle');
+            const btnText = document.querySelector('#loginSubmitBtn span');
+            const toggleBtn = document.querySelector('button[onclick="toggleRegisterMode()"]');
+            if (isRegisterMode) {
+                title.innerText = "Registrieren";
+                btnText.innerText = "Konto erstellen";
+                toggleBtn.innerHTML = 'Bereits ein Konto? <span class="text-primary-500">Anmelden</span>';
+            } else {
+                title.innerText = "Anmelden";
+                btnText.innerText = "Anmelden";
+                toggleBtn.innerHTML = 'Noch kein Konto? <span class="text-primary-500">Registrieren</span>';
+            }
+        }
+        
+        async function forgotPassword() {
+            const email = document.getElementById('loginEmail').value;
+            if(!email) {
+                showToast("Bitte gib zuerst deine E-Mail in das Feld oben ein", "error");
+                return;
+            }
+            try {
+                await auth.sendPasswordResetEmail(email);
+                showToast("E-Mail zum Zurücksetzen gesendet!", "success");
+            } catch(e) {
+                showToast("Fehler: " + e.message, "error");
+            }
+        }
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
             const pwd = document.getElementById('loginPassword').value;
             try {
-                await auth.signInWithEmailAndPassword(email, pwd);
+                if (isRegisterMode) {
+                    const userCred = await auth.createUserWithEmailAndPassword(email, pwd);
+                    await db.collection("users").doc(userCred.user.uid).set({ email, role: "User" });
+                } else {
+                    await auth.signInWithEmailAndPassword(email, pwd);
+                }
             } catch (error) {
-                showToast("Fehler beim Anmelden: " + error.message, "error");
+                showToast("Fehler: " + error.message, "error");
             }
         });
 
