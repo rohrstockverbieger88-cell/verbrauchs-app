@@ -1,3 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Dashed Gauge Arc -->
+  <path d="M 40 140 A 70 70 0 1 1 160 140" stroke="#cbd5e1" stroke-width="12" stroke-dasharray="14 14" stroke-linecap="round" fill="none"/>
+  
+  <!-- Teal X -->
+  <line x1="75" y1="75" x2="125" y2="125" stroke="#14b8a6" stroke-width="20" stroke-linecap="round"/>
+  <line x1="125" y1="75" x2="75" y2="125" stroke="#14b8a6" stroke-width="20" stroke-linecap="round"/>
+  
+  <!-- Center Dot -->
+  <circle cx="100" cy="100" r="10" fill="#0d9488" />
 </svg>

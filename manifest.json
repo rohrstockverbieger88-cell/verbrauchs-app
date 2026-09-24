@@ -1,8 +1,8 @@
 {
-  "name": "Verbrauchsüberwachung",
-  "short_name": "Verbrauch",
-  "description": "Einfache Erfassung von Zählerständen",
-  "start_url": "./index.html",
+  "name": "Metraxo",
+  "short_name": "Metraxo",
+  "description": "Regelmäßig checken statt am Jahresende blechen.",
+  "start_url": "./app.html",
   "display": "standalone",
   "background_color": "#030712",
   "theme_color": "#030712",

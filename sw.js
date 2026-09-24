@@ -1,7 +1,7 @@
 const CACHE_NAME = 'verbrauch-v1';
 const urlsToCache = [
   './',
-  './index.html',
+  './app.html',
   './icon.svg',
   './manifest.json',
   'https://unpkg.com/lucide@latest',
