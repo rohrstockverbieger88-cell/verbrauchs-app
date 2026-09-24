@@ -3074,6 +3074,37 @@
             alert('Vielen Dank! Deine Nachricht wurde (simuliert) versendet.');
             closeContactModal();
         }
+
+        // Cookie Consent Logic
+        function initCookies() {
+            if (!localStorage.getItem('cookieConsent')) {
+                setTimeout(() => {
+                    document.getElementById('cookieBanner').classList.remove('translate-y-full');
+                }, 1000);
+            }
+        }
+        function acceptCookies() {
+            localStorage.setItem('cookieConsent', 'accepted');
+            document.getElementById('cookieBanner').classList.add('translate-y-full');
+        }
+        function declineCookies() {
+            localStorage.setItem('cookieConsent', 'declined');
+            document.getElementById('cookieBanner').classList.add('translate-y-full');
+        }
+        window.addEventListener('DOMContentLoaded', initCookies);
     </script>
+
+    <!-- Cookie Banner -->
+    <div id="cookieBanner" class="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 p-4 sm:p-6 z-[100] transform translate-y-full transition-transform duration-500 shadow-2xl">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-sm text-gray-300">
+                Wir verwenden Cookies, um deine Erfahrung auf unserer Website zu verbessern. Weitere Informationen findest du in unserer <a href="#" class="text-primary-400 hover:underline">Datenschutzerklärung</a>.
+            </div>
+            <div class="flex gap-3 shrink-0">
+                <button onclick="acceptCookies()" class="px-5 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-500 rounded-lg transition-colors whitespace-nowrap shadow-lg shadow-primary-500/20">Akzeptieren</button>
+                <button onclick="declineCookies()" class="px-5 py-2 text-sm font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors border border-gray-700 whitespace-nowrap">Ablehnen</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
