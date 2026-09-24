@@ -1,7 +1,9 @@
-const CACHE_NAME = 'verbrauch-v25';
+const CACHE_NAME = 'verbrauch-v26';
 const urlsToCache = [
   './',
   './app.html',
+  './index.html',
+  './faq.html',
   './impressum.html',
   './datenschutz.html',
   './agb.html',
@@ -9,7 +11,8 @@ const urlsToCache = [
   './manifest.json',
   'https://unpkg.com/lucide@latest',
   'https://cdn.jsdelivr.net/npm/chart.js',
-  'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'
+  'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js',
+  'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
 ];
 
 // Tailwind script via CDN and Firebase scripts can sometimes fail in addAll due to CORS/opaque responses, 

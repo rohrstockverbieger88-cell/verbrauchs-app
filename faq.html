@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="de" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Metraxo - Häufig gestellte Fragen (FAQ)</title>
+    <link rel="icon" type="image/svg+xml" href="./icon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Outfit', sans-serif; background-color: #0F172A; color: #f8fafc; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <nav class="glass-card border-x-0 border-t-0 p-4 sticky top-0 z-50">
+        <div class="max-w-3xl mx-auto flex items-center gap-3">
+            <a href="index.html" class="flex items-center gap-2 hover:opacity-80 transition">
+                <img src="./icon.svg" class="w-8 h-8">
+                <span class="font-bold text-xl">Metraxo</span>
+            </a>
+        </div>
+    </nav>
+    <main class="flex-1 max-w-3xl mx-auto p-8 w-full">
+        <div class="text-center mb-12 mt-4">
+            <h1 class="text-3xl md:text-4xl font-bold mb-4">Häufig gestellte Fragen (FAQ)</h1>
+            <p class="text-slate-400 text-lg">Hier findest du Antworten auf die wichtigsten Fragen zur Nutzung von Metraxo.</p>
+        </div>
+        
+        <div class="space-y-4">
+            <details class="group bg-slate-900 border border-slate-800 rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden">
+                <summary class="flex cursor-pointer items-center justify-between gap-1.5 p-5 text-white font-medium">
+                    Wie lese ich Zählerstände mit der Kamera ab?
+                    <span class="shrink-0 transition duration-300 group-open:-rotate-180">
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400"></i>
+                    </span>
+                </summary>
+                <div class="px-5 pb-5 text-slate-400 leading-relaxed text-sm border-t border-slate-800 pt-4 mt-2">
+                    Beim Anlegen eines Bereichs oder beim Erfassen eines neuen Wertes kannst du auf das kleine <strong>Kamera-Symbol</strong> im Eingabefeld klicken. Halte die Kamera auf deinen Zähler – die Zahlen werden automatisch erkannt und eingetragen.
+                </div>
+            </details>
+
+            <details class="group bg-slate-900 border border-slate-800 rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden">
+                <summary class="flex cursor-pointer items-center justify-between gap-1.5 p-5 text-white font-medium">
+                    Wie exportiere ich meine Daten?
+                    <span class="shrink-0 transition duration-300 group-open:-rotate-180">
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400"></i>
+                    </span>
+                </summary>
+                <div class="px-5 pb-5 text-slate-400 leading-relaxed text-sm border-t border-slate-800 pt-4 mt-2">
+                    Klicke in der App oben rechts auf das Einstellungen-Symbol (Optionen) und wähle <strong>"Export"</strong>. Du kannst deine Zählerstände dann bequem als Excel-Datei (.xlsx) oder CSV herunterladen.
+                </div>
+            </details>
+            
+            <details class="group bg-slate-900 border border-slate-800 rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden">
+                <summary class="flex cursor-pointer items-center justify-between gap-1.5 p-5 text-white font-medium">
+                    Wie importiere ich alte Daten?
+                    <span class="shrink-0 transition duration-300 group-open:-rotate-180">
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400"></i>
+                    </span>
+                </summary>
+                <div class="px-5 pb-5 text-slate-400 leading-relaxed text-sm border-t border-slate-800 pt-4 mt-2">
+                    Im Optionen-Menü (oben rechts) findest du den Punkt <strong>"Import (V1)"</strong>. Hier kannst du eine zuvor exportierte CSV-Datei auswählen, um alte Zählerstände wiederherzustellen.
+                </div>
+            </details>
+
+            <details class="group bg-slate-900 border border-slate-800 rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden">
+                <summary class="flex cursor-pointer items-center justify-between gap-1.5 p-5 text-white font-medium">
+                    Wo kann ich Verbesserungsvorschläge abgeben?
+                    <span class="shrink-0 transition duration-300 group-open:-rotate-180">
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400"></i>
+                    </span>
+                </summary>
+                <div class="px-5 pb-5 text-slate-400 leading-relaxed text-sm border-t border-slate-800 pt-4 mt-2">
+                    Wir freuen uns über dein Feedback! Klicke im Optionen-Menü in der App auf <strong>"Verbesserung"</strong> oder nutze ganz unten auf der Startseite den Button "Kontakt".
+                </div>
+            </details>
+
+            <details class="group bg-slate-900 border border-slate-800 rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden">
+                <summary class="flex cursor-pointer items-center justify-between gap-1.5 p-5 text-white font-medium">
+                    Wie kann ich die Entwicklung spenden/unterstützen?
+                    <span class="shrink-0 transition duration-300 group-open:-rotate-180">
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400"></i>
+                    </span>
+                </summary>
+                <div class="px-5 pb-5 text-slate-400 leading-relaxed text-sm border-t border-slate-800 pt-4 mt-2">
+                    Metraxo ist 100% kostenlos. Du kannst das Projekt jedoch unterstützen, indem du im Menü auf <strong>"Entwickler spenden"</strong> klickst (PayPal) oder vor deinem nächsten Amazon-Einkauf den Link <strong>"Auf Amazon shoppen"</strong> verwendest.
+                </div>
+            </details>
+
+            <details class="group bg-slate-900 border border-slate-800 rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden">
+                <summary class="flex cursor-pointer items-center justify-between gap-1.5 p-5 text-white font-medium">
+                    Wie lösche ich einen Bereich?
+                    <span class="shrink-0 transition duration-300 group-open:-rotate-180">
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400"></i>
+                    </span>
+                </summary>
+                <div class="px-5 pb-5 text-slate-400 leading-relaxed text-sm border-t border-slate-800 pt-4 mt-2">
+                    Gehe in der App in die Detailansicht des Bereichs (z.B. Strom), klicke oben rechts auf das <strong>Zahnrad-Symbol</strong> und wähle ganz unten "Bereich löschen".
+                </div>
+            </details>
+
+            <details class="group bg-slate-900 border border-slate-800 rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden">
+                <summary class="flex cursor-pointer items-center justify-between gap-1.5 p-5 text-white font-medium">
+                    Wie ändere ich mein Passwort?
+                    <span class="shrink-0 transition duration-300 group-open:-rotate-180">
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400"></i>
+                    </span>
+                </summary>
+                <div class="px-5 pb-5 text-slate-400 leading-relaxed text-sm border-t border-slate-800 pt-4 mt-2">
+                    Klicke in der App auf das Optionen-Menü (oben rechts) und wähle <strong>"Passwort ändern"</strong>. Du erhältst dann eine E-Mail mit einem Link zum Zurücksetzen.
+                </div>
+            </details>
+        </div>
+    </main>
+    
+    <footer class="border-t border-slate-800 py-6 mt-12 text-center text-slate-500 text-sm">
+        <div class="max-w-3xl mx-auto px-4 flex flex-wrap justify-center gap-4 sm:gap-6 mb-4">
+            <a href="faq.html" class="hover:text-primary-400">FAQ</a>
+            <a href="impressum.html" class="hover:text-primary-400">Impressum</a>
+            <a href="datenschutz.html" class="hover:text-primary-400">Datenschutz</a>
+            <a href="agb.html" class="hover:text-primary-400">AGB</a>
+        </div>
+        <p>© 2026 Metraxo. Alle Rechte vorbehalten.</p>
+    </footer>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
