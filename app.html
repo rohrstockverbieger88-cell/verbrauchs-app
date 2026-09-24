@@ -1714,6 +1714,168 @@
             lucide.createIcons();
         }
 
+        // ================= OBJECT MANAGEMENT =================
+
+        function renderObjectsView() {
+            const list = document.getElementById('objectsList');
+            const emptyState = document.getElementById('emptyObjectsState');
+            const fab = document.getElementById('fabAddObject');
+            
+            list.innerHTML = '';
+            
+            if (objects.length === 0) {
+                list.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                fab.classList.add('hidden');
+            } else {
+                list.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+                fab.classList.remove('hidden');
+                
+                objects.forEach(obj => {
+                    // Count categories for this object
+                    const objCats = categories.filter(c => c.objectId === obj.id);
+                    
+                    let icon = 'home';
+                    if(obj.type === 'Wohnung') icon = 'building';
+                    if(obj.type === 'Garage') icon = 'warehouse';
+                    if(obj.type === 'Anderes') icon = 'layout-grid';
+                    
+                    const card = document.createElement('div');
+                    card.className = 'bg-gray-900 border border-gray-800 rounded-xl p-6 cursor-pointer hover:border-primary-500 transition-all hover:-translate-y-1 group relative overflow-hidden flex flex-col justify-between';
+                    card.onclick = () => openObject(obj.id);
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="bg-primary-500/20 p-3 rounded-xl text-primary-400 group-hover:scale-110 transition-transform">
+                                <i data-lucide="${icon}" class="w-6 h-6"></i>
+                            </div>
+                            <button onclick="event.stopPropagation(); deleteObject('${obj.id}')" class="text-gray-500 hover:text-red-400 p-2 rounded-lg hover:bg-red-500/10 transition-colors">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-1">${obj.name}</h3>
+                            <p class="text-sm text-gray-400">${objCats.length} Bereiche</p>
+                        </div>
+                    `;
+                    list.appendChild(card);
+                });
+            }
+            lucide.createIcons();
+        }
+
+        function openObject(id) {
+            currentObjectId = id;
+            const obj = objects.find(o => o.id === id);
+            document.getElementById('currentObjectName').innerText = obj ? obj.name : 'Objekt';
+            
+            objectSelectionView.classList.add('hidden');
+            objectSelectionView.classList.remove('flex');
+            appContainer.classList.remove('hidden');
+            appContainer.classList.add('flex');
+            
+            renderView();
+        }
+
+        function backToObjects() {
+            currentObjectId = null;
+            appContainer.classList.add('hidden');
+            appContainer.classList.remove('flex');
+            objectSelectionView.classList.remove('hidden');
+            objectSelectionView.classList.add('flex');
+            renderObjectsView();
+        }
+
+        function openAddObjectModal() {
+            document.getElementById('addObjectForm').reset();
+            document.getElementById('editObjectId').value = '';
+            document.getElementById('addObjectModalTitle').innerText = 'Neues Objekt anlegen';
+            document.getElementById('customObjectTypeContainer').classList.add('hidden');
+            document.getElementById('customObjectTypeInput').removeAttribute('required');
+            selectObjectType('Haus'); // Default
+            
+            const modal = document.getElementById('addObjectModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeAddObjectModal() {
+            const modal = document.getElementById('addObjectModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function selectObjectType(type) {
+            document.getElementById('objectTypeInput').value = type;
+            
+            ['Haus', 'Wohnung', 'Garage', 'Anderes'].forEach(t => {
+                const btn = document.getElementById('btnObjType-' + t);
+                if (btn) {
+                    if (t === type) {
+                        btn.classList.add('border-primary-500', 'bg-primary-500/20');
+                        btn.classList.remove('border-gray-700', 'bg-gray-800');
+                    } else {
+                        btn.classList.remove('border-primary-500', 'bg-primary-500/20');
+                        btn.classList.add('border-gray-700', 'bg-gray-800');
+                    }
+                }
+            });
+            
+            const customContainer = document.getElementById('customObjectTypeContainer');
+            const customInput = document.getElementById('customObjectTypeInput');
+            if (type === 'Anderes') {
+                customContainer.classList.remove('hidden');
+                customInput.setAttribute('required', 'true');
+            } else {
+                customContainer.classList.add('hidden');
+                customInput.removeAttribute('required');
+            }
+        }
+
+        function saveObject(e) {
+            e.preventDefault();
+            const id = document.getElementById('editObjectId').value;
+            let type = document.getElementById('objectTypeInput').value;
+            if (type === 'Anderes') {
+                type = document.getElementById('customObjectTypeInput').value || 'Anderes';
+            }
+            const name = document.getElementById('objectNameInput').value;
+            
+            if (id) {
+                // Edit (Not implemented yet, but keeping structure)
+            } else {
+                const newObj = {
+                    id: 'obj_' + Date.now().toString(36) + Math.random().toString(36).substr(2),
+                    name: name,
+                    type: type,
+                    timestamp: new Date().toISOString()
+                };
+                objects.push(newObj);
+                fsSetObject(newObj);
+                showToast("Objekt angelegt!", "success");
+            }
+            
+            closeAddObjectModal();
+            renderObjectsView();
+        }
+
+        async function deleteObject(id) {
+            const hasCategories = categories.some(c => c.objectId === id);
+            if (hasCategories) {
+                showToast("Bitte lösche zuerst alle Bereiche in diesem Objekt.", "error");
+                return;
+            }
+            
+            if (!confirm("Objekt wirklich löschen?")) return;
+            
+            objects = objects.filter(o => o.id !== id);
+            fsDelObject(id);
+            renderObjectsView();
+            showToast("Objekt gelöscht", "success");
+        }
+
         // --- View Routing ---
         function renderView() {
             lucide.createIcons();
