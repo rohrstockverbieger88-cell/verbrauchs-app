@@ -236,8 +236,8 @@
         </div>
     </div>
 
-    <!-- Main App Container -->
-    <div id="appContainer" class="hidden flex-col min-h-screen w-full fade-in">
+    <!-- Object Selection View -->
+    <div id="objectSelectionView" class="hidden flex-col min-h-screen w-full fade-in pb-20">
         <!-- Navbar -->
         <nav class="bg-gray-900 border-b border-gray-800 sticky top-0 z-30">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -245,6 +245,56 @@
                     <div class="flex items-center gap-2">
                         <img src="./icon.svg" class="w-8 h-8">
                         <span class="font-bold text-xl tracking-tight">Metraxo</span>
+                    </div>
+                    <!-- Logout -->
+                    <button onclick="logoutApp()" class="text-sm text-red-400 hover:text-white hover:bg-red-900/50 flex items-center gap-2 px-3 py-2 rounded-lg transition-colors">
+                        <i data-lucide="log-out" class="w-4 h-4"></i> Abmelden
+                    </button>
+                </div>
+            </div>
+        </nav>
+        
+        <main class="flex-grow flex flex-col p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto w-full">
+            <h1 class="text-2xl font-bold mb-2">Deine Objekte</h1>
+            <p class="text-gray-400 mb-8 text-sm">Wähle ein Objekt aus oder lege ein neues an, um Verbräuche zu erfassen.</p>
+            
+            <div id="objectsList" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Object Cards will be injected here -->
+            </div>
+            
+            <!-- Empty state hidden by default -->
+            <div id="emptyObjectsState" class="hidden flex-col items-center justify-center py-12 text-center bg-gray-900/50 rounded-2xl border border-gray-800 mt-4">
+                <div class="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center text-gray-500 mb-4">
+                    <i data-lucide="home" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-lg font-medium text-white mb-2">Noch keine Objekte</h3>
+                <p class="text-sm text-gray-400 max-w-xs mx-auto mb-6">Lege dein erstes Objekt an (z.B. Haus, Wohnung), um Verbräuche zu tracken.</p>
+                <button onclick="openAddObjectModal()" class="btn-primary w-auto inline-flex px-6">
+                    <i data-lucide="plus" class="w-5 h-5 mr-2"></i> Objekt anlegen
+                </button>
+            </div>
+        </main>
+        
+        <!-- Floating Action Button for objects -->
+        <button id="fabAddObject" onclick="openAddObjectModal()" class="fixed bottom-6 right-6 w-14 h-14 bg-primary-600 hover:bg-primary-500 text-white rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-transform hover:scale-110 z-40 hidden">
+            <i data-lucide="plus" class="w-6 h-6"></i>
+        </button>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="appContainer" class="hidden flex-col min-h-screen w-full fade-in">
+        <!-- Navbar -->
+        <nav class="bg-gray-900 border-b border-gray-800 sticky top-0 z-30">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16 items-center">
+                    <div class="flex items-center gap-3">
+                        <button onclick="backToObjects()" class="p-2 -ml-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors" title="Zurück zur Objektübersicht">
+                            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                        </button>
+                        <div class="flex flex-col">
+                            <span class="text-xs text-gray-400">Metraxo</span>
+                            <span id="currentObjectName" class="font-bold text-lg leading-none">Objekt</span>
+                        </div>
                     </div>
                     <!-- Navbar Actions -->
                     <div class="flex items-center gap-2" id="navActions">
@@ -503,6 +553,61 @@
 
         <!-- ================== MODALS ================== -->
 
+        <!-- Add Object Modal -->
+        <div id="addObjectModal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center fade-in">
+            <div class="absolute inset-0 bg-gray-950/80 backdrop-blur-sm" onclick="closeAddObjectModal()"></div>
+            <div class="relative bg-gray-900 w-full sm:w-[90%] max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl border border-gray-800 slide-up flex flex-col max-h-[90vh]">
+                <!-- Header -->
+                <div class="flex items-center justify-between p-4 border-b border-gray-800">
+                    <h3 class="text-lg font-bold" id="addObjectModalTitle">Neues Objekt anlegen</h3>
+                    <button onclick="closeAddObjectModal()" class="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <!-- Content -->
+                <div class="p-4 overflow-y-auto">
+                    <form id="addObjectForm" onsubmit="saveObject(event)" class="space-y-4">
+                        <input type="hidden" id="editObjectId">
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Art des Objekts</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="button" onclick="selectObjectType('Haus')" id="btnObjType-Haus" class="flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-700 bg-gray-800 hover:border-primary-500 transition-colors">
+                                    <i data-lucide="home" class="w-6 h-6 text-gray-400"></i>
+                                    <span class="text-sm">Haus</span>
+                                </button>
+                                <button type="button" onclick="selectObjectType('Wohnung')" id="btnObjType-Wohnung" class="flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-700 bg-gray-800 hover:border-primary-500 transition-colors">
+                                    <i data-lucide="building" class="w-6 h-6 text-gray-400"></i>
+                                    <span class="text-sm">Wohnung</span>
+                                </button>
+                                <button type="button" onclick="selectObjectType('Garage')" id="btnObjType-Garage" class="flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-700 bg-gray-800 hover:border-primary-500 transition-colors">
+                                    <i data-lucide="warehouse" class="w-6 h-6 text-gray-400"></i>
+                                    <span class="text-sm">Garage</span>
+                                </button>
+                                <button type="button" onclick="selectObjectType('Anderes')" id="btnObjType-Anderes" class="flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-700 bg-gray-800 hover:border-primary-500 transition-colors">
+                                    <i data-lucide="layout-grid" class="w-6 h-6 text-gray-400"></i>
+                                    <span class="text-sm">Anderes</span>
+                                </button>
+                            </div>
+                            <input type="hidden" id="objectTypeInput" required>
+                        </div>
+                        
+                        <div id="customObjectTypeContainer" class="hidden">
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Eigene Art eintragen</label>
+                            <input type="text" id="customObjectTypeInput" class="input-field" placeholder="z.B. Gartenhaus">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Name des Objekts</label>
+                            <input type="text" id="objectNameInput" required class="input-field" placeholder="z.B. Mein Haus">
+                        </div>
+                        
+                        <button type="submit" class="btn-primary w-full mt-6" id="saveObjectBtn">Objekt anlegen</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <!-- Add Category Modal -->
         <div id="addCategoryModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
             <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm shadow-sm transition-opacity"
@@ -521,7 +626,7 @@
                             <div>
                                 <label class="block text-sm font-medium text-gray-400 mb-1">Name des Bereichs*</label>
                                 <input type="text" id="catName" list="catNameSuggestions" required
-                                    placeholder="z.B. Strom Haus"
+                                    placeholder="z.B. Strom"
                                     class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 outline-none focus:border-primary-500">
                                 <datalist id="catNameSuggestions">
                                     <option value="Strom">
@@ -1032,6 +1137,8 @@
         let appData = [];
         let categories = [];
         let notifications = [];
+        let objects = [];
+        let currentObjectId = null;
 
         let activeCategoryId = null; // null means dashboard view
         let detailChartInstance = null;
@@ -1042,6 +1149,7 @@
         const authLoadingView = document.getElementById('authLoadingView');
         const loginView = document.getElementById('loginView');
         const adminSetupView = document.getElementById('adminSetupView');
+        const objectSelectionView = document.getElementById('objectSelectionView');
         const appContainer = document.getElementById('appContainer');
 
         let isFirstRun = false;
@@ -1068,8 +1176,12 @@
                 
                 loginView.classList.add('hidden');
                 adminSetupView.classList.add('hidden');
-                appContainer.classList.remove('hidden');
-                appContainer.classList.add('flex');
+                
+                appContainer.classList.add('hidden');
+                appContainer.classList.remove('flex');
+                
+                objectSelectionView.classList.remove('hidden');
+                objectSelectionView.classList.add('flex');
 
                 // Determine Admin Role in parallel with data loading
                 const rolePromise = db.collection('users').doc(user.uid).get().then(userDoc => {
@@ -1103,12 +1215,14 @@
                 await Promise.all([rolePromise, loadStateFromFirestore()]);
                 setupCsvImport();
                 initIconGrid();
-                renderView();
+                renderObjectsView();
             } else {
                 currentUser = null;
                 isAdmin = false;
                 appContainer.classList.add('hidden');
                 appContainer.classList.remove('flex');
+                objectSelectionView.classList.add('hidden');
+                objectSelectionView.classList.remove('flex');
 
                 isFirstRun = await checkFirstRun();
 
@@ -1288,11 +1402,15 @@
                 const uid = currentUser.uid;
 
                 // Load all collections in parallel for maximum speed
-                const [cSnap, dSnap, nSnap] = await Promise.all([
+                const [cSnap, dSnap, nSnap, oSnap] = await Promise.all([
                     db.collection('users').doc(uid).collection('categories').get(),
                     db.collection('users').doc(uid).collection('appData').get(),
-                    db.collection('users').doc(uid).collection('notifications').get()
+                    db.collection('users').doc(uid).collection('notifications').get(),
+                    db.collection('users').doc(uid).collection('objects').get()
                 ]);
+
+                objects = [];
+                oSnap.forEach(d => objects.push(d.data()));
 
                 categories = [];
                 cSnap.forEach(d => categories.push(d.data()));
@@ -1303,6 +1421,26 @@
 
                 notifications = [];
                 nSnap.forEach(d => notifications.push(d.data()));
+
+                // Migration: If we have categories but no objects, create a default one
+                if (objects.length === 0 && categories.length > 0) {
+                    const defaultObj = {
+                        id: 'obj_' + Date.now().toString(36) + Math.random().toString(36).substr(2),
+                        name: 'Mein Zuhause',
+                        type: 'Haus',
+                        timestamp: new Date().toISOString()
+                    };
+                    objects.push(defaultObj);
+                    fsSetObject(defaultObj);
+                    
+                    // Assign existing categories to this default object
+                    categories.forEach(cat => {
+                        if (!cat.objectId) {
+                            cat.objectId = defaultObj.id;
+                            fsSetCat(cat);
+                        }
+                    });
+                }
 
                 dismissToast(toast);
                 checkAndGenerateNotifications();
@@ -1315,6 +1453,8 @@
 
         // --- Firestore Sync Helpers ---
         // Instead of a single bulk saveState(), we actively sync to the Cloud in the background
+        function fsSetObject(obj) { if (currentUser) db.collection('users').doc(currentUser.uid).collection('objects').doc(obj.id).set(obj).catch(console.error); }
+        function fsDelObject(id) { if (currentUser) db.collection('users').doc(currentUser.uid).collection('objects').doc(id).delete().catch(console.error); }
         function fsSetCat(cat) { if (currentUser) db.collection('users').doc(currentUser.uid).collection('categories').doc(cat.id).set(cat).catch(console.error); }
         function fsDelCat(id) { if (currentUser) db.collection('users').doc(currentUser.uid).collection('categories').doc(id).delete().catch(console.error); }
         function fsSetData(d) { if (currentUser) db.collection('users').doc(currentUser.uid).collection('appData').doc(d.id).set(d).catch(console.error); }
@@ -1657,8 +1797,10 @@
             const container = document.getElementById('dashboardTiles');
             const emptyState = document.getElementById('dashboardEmptyState');
             container.innerHTML = '';
+            
+            const objCategories = categories.filter(c => c.objectId === currentObjectId);
 
-            if (categories.length === 0) {
+            if (objCategories.length === 0) {
                 emptyState.classList.remove('hidden');
                 emptyState.classList.add('flex');
             } else {
@@ -1672,7 +1814,7 @@
                 lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
                 const lastMonthKey = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
 
-                categories.forEach(cat => {
+                objCategories.forEach(cat => {
                     const consumptions = getCategoryConsumptions(cat.id);
                     const currentC = consumptions.find(c => c.key === currentMonthKey)?.amount || 0;
                     const prevC = consumptions.find(c => c.key === lastMonthKey)?.amount || 0;
@@ -1924,6 +2066,7 @@
             const newCatId = 'cat_' + Date.now().toString(36);
             const newCat = {
                 id: newCatId,
+                objectId: currentObjectId, // Verknüpfung zum aktuellen Objekt
                 name, unit, icon, color, comment,
                 meterNumber: meterId,
                 imageBase64
