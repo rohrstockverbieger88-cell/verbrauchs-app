@@ -393,18 +393,9 @@
                                 </button>
                                 <div id="mobileMenuDropdown"
                                     class="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl opacity-0 invisible transition-all z-50 overflow-hidden">
-                                    <button onclick="closeMobileMenuHack(); openAddCategoryModal()" id="navAddBtn"
-                                        class="w-full text-left px-4 py-2 text-sm text-white hover:bg-primary-600 flex items-center gap-2 border-b border-gray-700">
-                                        <i data-lucide="plus-circle" class="w-4 h-4 whitespace-nowrap"></i> Bereich
-                                        hinzufügen
-                                    </button>
                                     <button onclick="closeMobileMenuHack(); document.getElementById('csvFileInput').click()"
                                         class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2">
                                         <i data-lucide="upload" class="w-4 h-4"></i> Import (V1)
-                                    </button>
-                                    <button onclick="closeMobileMenuHack(); openContactModal('Verbesserung')"
-                                        class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
-                                        <i data-lucide="message-square" class="w-4 h-4"></i> Verbesserung
                                     </button>
                                     <button onclick="closeMobileMenuHack(); openExportModal()"
                                         class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
@@ -417,6 +408,10 @@
                                     <button onclick="showAdminDashboard()" id="navAdminBtn"
                                         class="hidden w-full text-left px-4 py-3 text-sm text-primary-400 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
                                         <i data-lucide="users" class="w-4 h-4"></i> Benutzerverwaltung
+                                    </button>
+                                    <button onclick="closeMobileMenuHack(); openContactModal('Verbesserung')"
+                                        class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
+                                        <i data-lucide="message-square" class="w-4 h-4"></i> Verbesserung
                                     </button>
                                     <a href="https://link.amazon/B0dveTLTp" target="_blank" rel="noopener noreferrer"
                                         class="w-full text-left px-4 py-3 text-sm text-[#FF9900] hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
@@ -2054,6 +2049,18 @@
                     `;
                     container.appendChild(tile);
                 });
+
+                const addCard = document.createElement('div');
+                addCard.onclick = () => openAddCategoryModal();
+                addCard.className = 'bg-gray-900/50 border-2 border-dashed border-gray-800 rounded-xl p-5 hover:border-gray-700 hover:bg-gray-800/50 transition-colors cursor-pointer flex flex-col items-center justify-center text-gray-500 hover:text-white group min-h-[220px]';
+                addCard.innerHTML = `
+                    <div class="w-14 h-14 rounded-full bg-gray-800 group-hover:bg-primary-600 flex items-center justify-center mb-4 transition-colors">
+                        <i data-lucide="plus" class="w-6 h-6 text-gray-400 group-hover:text-white transition-colors"></i>
+                    </div>
+                    <span class="font-medium text-base">Bereich hinzufügen</span>
+                `;
+                container.appendChild(addCard);
+
                 lucide.createIcons();
             }
         }
