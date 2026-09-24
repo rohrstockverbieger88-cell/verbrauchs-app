@@ -281,6 +281,61 @@
         </button>
     </div>
 
+    <!-- Add Object Modal (Moved outside appContainer to be visible when appContainer is hidden) -->
+    <div id="addObjectModal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center fade-in">
+        <div class="absolute inset-0 bg-gray-950/80 backdrop-blur-sm" onclick="closeAddObjectModal()"></div>
+        <div class="relative bg-gray-900 w-full sm:w-[90%] max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl border border-gray-800 slide-up flex flex-col max-h-[90vh]">
+            <!-- Header -->
+            <div class="flex items-center justify-between p-4 border-b border-gray-800">
+                <h3 class="text-lg font-bold" id="addObjectModalTitle">Neues Objekt anlegen</h3>
+                <button onclick="closeAddObjectModal()" class="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <!-- Content -->
+            <div class="p-4 overflow-y-auto">
+                <form id="addObjectForm" onsubmit="saveObject(event)" class="space-y-4">
+                    <input type="hidden" id="editObjectId">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Art des Objekts</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="selectObjectType('Haus')" id="btnObjType-Haus" class="flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-700 bg-gray-800 hover:border-primary-500 transition-colors">
+                                <i data-lucide="home" class="w-6 h-6 text-gray-400"></i>
+                                <span class="text-sm">Haus</span>
+                            </button>
+                            <button type="button" onclick="selectObjectType('Wohnung')" id="btnObjType-Wohnung" class="flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-700 bg-gray-800 hover:border-primary-500 transition-colors">
+                                <i data-lucide="building" class="w-6 h-6 text-gray-400"></i>
+                                <span class="text-sm">Wohnung</span>
+                            </button>
+                            <button type="button" onclick="selectObjectType('Garage')" id="btnObjType-Garage" class="flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-700 bg-gray-800 hover:border-primary-500 transition-colors">
+                                <i data-lucide="warehouse" class="w-6 h-6 text-gray-400"></i>
+                                <span class="text-sm">Garage</span>
+                            </button>
+                            <button type="button" onclick="selectObjectType('Anderes')" id="btnObjType-Anderes" class="flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-700 bg-gray-800 hover:border-primary-500 transition-colors">
+                                <i data-lucide="layout-grid" class="w-6 h-6 text-gray-400"></i>
+                                <span class="text-sm">Anderes</span>
+                            </button>
+                        </div>
+                        <input type="hidden" id="objectTypeInput" required>
+                    </div>
+                    
+                    <div id="customObjectTypeContainer" class="hidden">
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Eigene Art eintragen</label>
+                        <input type="text" id="customObjectTypeInput" class="input-field" placeholder="z.B. Gartenhaus">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Name des Objekts</label>
+                        <input type="text" id="objectNameInput" required class="input-field" placeholder="z.B. Mein Haus">
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-3 rounded-lg flex justify-center items-center shadow-lg hover:shadow-primary-500/20 transition-all mt-6" id="saveObjectBtn">Objekt anlegen</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Main App Container -->
     <div id="appContainer" class="hidden flex-col min-h-screen w-full fade-in">
         <!-- Navbar -->
@@ -552,61 +607,6 @@
         </main>
 
         <!-- ================== MODALS ================== -->
-
-        <!-- Add Object Modal -->
-        <div id="addObjectModal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center fade-in">
-            <div class="absolute inset-0 bg-gray-950/80 backdrop-blur-sm" onclick="closeAddObjectModal()"></div>
-            <div class="relative bg-gray-900 w-full sm:w-[90%] max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl border border-gray-800 slide-up flex flex-col max-h-[90vh]">
-                <!-- Header -->
-                <div class="flex items-center justify-between p-4 border-b border-gray-800">
-                    <h3 class="text-lg font-bold" id="addObjectModalTitle">Neues Objekt anlegen</h3>
-                    <button onclick="closeAddObjectModal()" class="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition-colors">
-                        <i data-lucide="x" class="w-5 h-5"></i>
-                    </button>
-                </div>
-                <!-- Content -->
-                <div class="p-4 overflow-y-auto">
-                    <form id="addObjectForm" onsubmit="saveObject(event)" class="space-y-4">
-                        <input type="hidden" id="editObjectId">
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-2">Art des Objekts</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button type="button" onclick="selectObjectType('Haus')" id="btnObjType-Haus" class="flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-700 bg-gray-800 hover:border-primary-500 transition-colors">
-                                    <i data-lucide="home" class="w-6 h-6 text-gray-400"></i>
-                                    <span class="text-sm">Haus</span>
-                                </button>
-                                <button type="button" onclick="selectObjectType('Wohnung')" id="btnObjType-Wohnung" class="flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-700 bg-gray-800 hover:border-primary-500 transition-colors">
-                                    <i data-lucide="building" class="w-6 h-6 text-gray-400"></i>
-                                    <span class="text-sm">Wohnung</span>
-                                </button>
-                                <button type="button" onclick="selectObjectType('Garage')" id="btnObjType-Garage" class="flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-700 bg-gray-800 hover:border-primary-500 transition-colors">
-                                    <i data-lucide="warehouse" class="w-6 h-6 text-gray-400"></i>
-                                    <span class="text-sm">Garage</span>
-                                </button>
-                                <button type="button" onclick="selectObjectType('Anderes')" id="btnObjType-Anderes" class="flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-700 bg-gray-800 hover:border-primary-500 transition-colors">
-                                    <i data-lucide="layout-grid" class="w-6 h-6 text-gray-400"></i>
-                                    <span class="text-sm">Anderes</span>
-                                </button>
-                            </div>
-                            <input type="hidden" id="objectTypeInput" required>
-                        </div>
-                        
-                        <div id="customObjectTypeContainer" class="hidden">
-                            <label class="block text-sm font-medium text-gray-400 mb-1">Eigene Art eintragen</label>
-                            <input type="text" id="customObjectTypeInput" class="input-field" placeholder="z.B. Gartenhaus">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-1">Name des Objekts</label>
-                            <input type="text" id="objectNameInput" required class="input-field" placeholder="z.B. Mein Haus">
-                        </div>
-                        
-                        <button type="submit" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-3 rounded-lg flex justify-center items-center shadow-lg hover:shadow-primary-500/20 transition-all mt-6" id="saveObjectBtn">Objekt anlegen</button>
-                    </form>
-                </div>
-            </div>
-        </div>
 
         <!-- Add Category Modal -->
         <div id="addCategoryModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
