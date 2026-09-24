@@ -38,6 +38,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Tesseract.js for OCR -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
@@ -399,7 +401,7 @@
                                     </button>
                                     <button onclick="closeMobileMenuHack(); openExportModal()"
                                         class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
-                                        <i data-lucide="download" class="w-4 h-4"></i> Export CSV
+                                        <i data-lucide="download" class="w-4 h-4"></i> Export
                                     </button>
                                     <button onclick="closeMobileMenuHack(); openChangePasswordModal()"
                                         class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
@@ -969,20 +971,23 @@
 
         <!-- Export Modal -->
         <div id="exportModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
-            <!-- Re-use basic export HTML, minimal modifications needed -->
             <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity"
                 onclick="closeModal('exportModal')"></div>
             <div class="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-sm slide-up p-6">
                 <h3 class="text-lg font-bold flex items-center gap-2 mb-4 border-b border-gray-800 pb-2"><i
                         data-lucide="download" class="w-5 h-5"></i> Daten exportieren</h3>
-                <div class="space-y-4">
-                    <p class="text-xs text-gray-400">Exportiert alle Zählerstände in eine CSV-Datei.</p>
-                    <button onclick="executeExport()"
-                        class="w-full px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-500 rounded-lg transition-colors flex justify-center items-center gap-2">
-                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export nach CSV starten
+                <div class="space-y-3">
+                    <p class="text-xs text-gray-400 mb-2">Wähle das Format für den Export deiner Zählerstände.</p>
+                    <button onclick="executeExport('excel')"
+                        class="w-full px-4 py-3 text-sm font-medium text-white bg-green-600 hover:bg-green-500 rounded-lg transition-colors flex justify-center items-center gap-2 shadow-lg shadow-green-500/20">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Als Excel (.xlsx)
+                    </button>
+                    <button onclick="executeExport('csv')"
+                        class="w-full px-4 py-3 text-sm font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors flex justify-center items-center gap-2 border border-gray-700">
+                        <i data-lucide="file-text" class="w-4 h-4"></i> Als CSV (.csv)
                     </button>
                     <button onclick="closeModal('exportModal')"
-                        class="w-full px-4 py-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">Abbrechen</button>
+                        class="w-full px-4 py-3 text-sm bg-transparent hover:text-white text-gray-400 rounded-lg">Abbrechen</button>
                 </div>
             </div>
         </div>
@@ -2594,7 +2599,7 @@
             modal.classList.remove('hidden'); modal.classList.add('flex');
         }
 
-        function executeExport() {
+        function executeExport(format = 'csv') {
             if (appData.length === 0) {
                 showToast('Keine Daten', 'error'); return;
             }
@@ -2612,16 +2617,26 @@
                 };
             });
 
-            const headers = ['Datum', 'Bereich', 'Zählernummer', 'Einheit', 'Stand', 'Kommentar', 'Notiz'];
-            const rows = exportData.map(d => `${d.Datum};"${d.Bereich}";"${d.Zählernummer}";"${d.Einheit}";${d.Stand.toString().replace('.', ',')};"${d.Kommentar}";"${d.Notiz}"`);
-            const csv = [headers.join(';'), ...rows].join('\n');
+            if (format === 'excel') {
+                // Export as actual .xlsx using SheetJS
+                const worksheet = XLSX.utils.json_to_sheet(exportData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Zählerstände");
+                XLSX.writeFile(workbook, `VData_${new Date().toISOString().split('T')[0]}.xlsx`);
+            } else {
+                // Export as CSV
+                const headers = ['Datum', 'Bereich', 'Zählernummer', 'Einheit', 'Stand', 'Kommentar', 'Notiz'];
+                const rows = exportData.map(d => `${d.Datum};"${d.Bereich}";"${d.Zählernummer}";"${d.Einheit}";${d.Stand.toString().replace('.', ',')};"${d.Kommentar}";"${d.Notiz}"`);
+                const csv = [headers.join(';'), ...rows].join('\n');
 
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `VData_${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = `VData_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
             closeModal('exportModal');
             showToast('Export abgeschlossen', 'success');
         }
