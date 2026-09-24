@@ -627,6 +627,31 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Messages Inbox -->
+            <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-2xl mt-6">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <i data-lucide="mail" class="w-5 h-5 text-blue-500"></i> Eingehende Nachrichten
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-800">
+                                    <th class="pb-3 pr-4">Datum</th>
+                                    <th class="pb-3 px-4">Absender</th>
+                                    <th class="pb-3 px-4">Betreff</th>
+                                    <th class="pb-3 px-4 w-1/2">Nachricht</th>
+                                    <th class="pb-3 pl-4 text-right">Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminMessagesList" class="divide-y divide-gray-800 text-sm">
+                                <!-- JS Injected Messages -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
         </main>
@@ -1251,6 +1276,7 @@
                     if (role === 'admin') {
                         isAdmin = true;
                         document.getElementById('navAdminBtn').classList.remove('hidden');
+                        updateUnreadMessagesBadge();
                     } else {
                         isAdmin = false;
                         document.getElementById('navAdminBtn').classList.add('hidden');
@@ -1595,6 +1621,87 @@
                 }
             } catch (err) {
                 console.error("Notes error:", err);
+            }
+
+            // Load Admin Messages
+            loadAdminMessages();
+        }
+
+        async function loadAdminMessages() {
+            const list = document.getElementById('adminMessagesList');
+            list.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Lade Nachrichten...</td></tr>';
+            try {
+                const snap = await db.collection('messages').orderBy('timestamp', 'desc').get();
+                list.innerHTML = '';
+                if (snap.empty) {
+                    list.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Keine Nachrichten vorhanden.</td></tr>';
+                    return;
+                }
+                snap.forEach(doc => {
+                    const msg = doc.data();
+                    const tr = document.createElement('tr');
+                    tr.className = `border-b border-gray-800 hover:bg-gray-800/50 transition-colors ${msg.read ? 'opacity-60' : 'font-medium text-white'}`;
+                    
+                    const dateStr = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' }) : 'Gerade eben';
+                    
+                    tr.innerHTML = `
+                        <td class="py-3 pr-4 whitespace-nowrap text-xs text-gray-400">${dateStr}</td>
+                        <td class="py-3 px-4">${msg.email || 'Keine E-Mail'}</td>
+                        <td class="py-3 px-4 text-primary-400">${msg.subject || 'Kein Betreff'}</td>
+                        <td class="py-3 px-4"><div class="max-h-20 overflow-y-auto whitespace-pre-wrap text-sm">${msg.message || ''}</div></td>
+                        <td class="py-3 pl-4 text-right whitespace-nowrap">
+                            ${!msg.read ? `<button onclick="markMessageRead('${doc.id}')" class="p-2 text-emerald-400 hover:text-white hover:bg-emerald-500/20 rounded-lg transition-colors" title="Als gelesen markieren"><i data-lucide="check" class="w-4 h-4"></i></button>` : ''}
+                            <button onclick="deleteMessage('${doc.id}')" class="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors ml-1" title="Nachricht löschen"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </td>
+                    `;
+                    list.appendChild(tr);
+                });
+                lucide.createIcons();
+                updateUnreadMessagesBadge();
+            } catch (err) {
+                console.error("Error loading messages:", err);
+                list.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-400">Fehler beim Laden. (Fehlen Datenbank-Regeln?)</td></tr>';
+            }
+        }
+
+        async function markMessageRead(docId) {
+            try {
+                await db.collection('messages').doc(docId).update({ read: true });
+                loadAdminMessages();
+            } catch (err) {
+                console.error("Error marking read:", err);
+            }
+        }
+
+        async function deleteMessage(docId) {
+            if (!confirm('Nachricht wirklich löschen?')) return;
+            try {
+                await db.collection('messages').doc(docId).delete();
+                loadAdminMessages();
+            } catch (err) {
+                console.error("Error deleting message:", err);
+            }
+        }
+
+        async function updateUnreadMessagesBadge() {
+            if (!document.getElementById('navAdminBtn').classList.contains('hidden')) {
+                try {
+                    const snap = await db.collection('messages').where('read', '==', false).get();
+                    let badge = document.getElementById('adminUnreadBadge');
+                    if (snap.size > 0) {
+                        if (!badge) {
+                            badge = document.createElement('span');
+                            badge.id = 'adminUnreadBadge';
+                            badge.className = 'ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full';
+                            document.getElementById('navAdminBtn').appendChild(badge);
+                        }
+                        badge.textContent = snap.size;
+                    } else if (badge) {
+                        badge.remove();
+                    }
+                } catch(err) {
+                    // Ignore, maybe no permission yet
+                }
             }
         }
 
@@ -3140,10 +3247,44 @@
             }
         }
 
-        function sendContactForm(e) {
+        async function sendContactForm(e) {
             e.preventDefault();
-            alert('Vielen Dank! Deine Nachricht wurde (simuliert) versendet.');
-            closeContactModal();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i>Senden...';
+            btn.disabled = true;
+            lucide.createIcons();
+
+            const email = document.getElementById('contactEmail').value;
+            const subjectSelect = document.getElementById('contactSubject').value;
+            const customSubject = document.getElementById('customContactSubject').value;
+            const message = document.getElementById('contactMessage').value;
+
+            const finalSubject = subjectSelect === 'Anderes' ? customSubject : subjectSelect;
+
+            try {
+                await db.collection('messages').add({
+                    email: email,
+                    subject: finalSubject,
+                    message: message,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    read: false
+                });
+                showToast('Vielen Dank! Deine Nachricht wurde versendet.', 'success');
+                e.target.reset();
+                closeContactModal();
+            } catch (err) {
+                console.error("Error sending message:", err);
+                if (err.code === 'permission-denied') {
+                    showToast('Die Datenbank-Regeln müssen für unautorisierte Nachrichten noch angepasst werden.', 'error');
+                } else {
+                    showToast('Fehler beim Senden der Nachricht.', 'error');
+                }
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
         }
 
         // Cookie Consent Logic

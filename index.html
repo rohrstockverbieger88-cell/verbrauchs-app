@@ -337,9 +337,50 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
     <script>
         // Initialisiere Lucide Icons
         lucide.createIcons();
+
+        // Firebase Setup
+        const firebaseConfig = {
+            apiKey: "AIzaSyDJribCVmSvsCaszpKHTmbW7PlNU3Jz7j8",
+            authDomain: "verbrauchsueberwachung.firebaseapp.com",
+            projectId: "verbrauchsueberwachung",
+            storageBucket: "verbrauchsueberwachung.firebasestorage.app",
+            messagingSenderId: "879446316321",
+            appId: "1:879446316321:web:374a4cd06a08ecc7d55a60",
+            measurementId: "G-K5123RVYXG"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Toast Helper
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg shadow-xl text-sm font-medium slide-up pointer-events-auto
+                ${type === 'success' ? 'bg-emerald-900/90 text-emerald-100 border border-emerald-800/50' : 
+                  'bg-red-900/90 text-red-100 border border-red-800/50'}`;
+            
+            const icon = type === 'success' ? 'check-circle' : 'alert-circle';
+            toast.innerHTML = `
+                <i data-lucide="${icon}" class="w-5 h-5"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.replace('slide-up', 'fade-out');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
 
         function openContactModal(defaultSubject = 'Frage') {
             document.getElementById('contactForm').reset();
@@ -371,10 +412,44 @@
             }
         }
 
-        function sendContactForm(e) {
+        async function sendContactForm(e) {
             e.preventDefault();
-            alert('Vielen Dank! Deine Nachricht wurde (simuliert) versendet.');
-            closeContactModal();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-2"></i>Senden...';
+            btn.disabled = true;
+            lucide.createIcons();
+
+            const email = document.getElementById('contactEmail').value;
+            const subjectSelect = document.getElementById('contactSubject').value;
+            const customSubject = document.getElementById('customContactSubject').value;
+            const message = document.getElementById('contactMessage').value;
+
+            const finalSubject = subjectSelect === 'Anderes' ? customSubject : subjectSelect;
+
+            try {
+                await db.collection('messages').add({
+                    email: email,
+                    subject: finalSubject,
+                    message: message,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    read: false
+                });
+                showToast('Vielen Dank! Deine Nachricht wurde versendet.', 'success');
+                e.target.reset();
+                closeContactModal();
+            } catch (err) {
+                console.error("Error sending message:", err);
+                if (err.code === 'permission-denied') {
+                    showToast('Die Datenbank-Regeln müssen für unautorisierte Nachrichten noch angepasst werden.', 'error');
+                } else {
+                    showToast('Fehler beim Senden der Nachricht.', 'error');
+                }
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
         }
 
         // Cookie Consent Logic
