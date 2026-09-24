@@ -712,14 +712,24 @@
                                 <div>
                                     <label class="block text-xs font-medium text-gray-400 mb-1">Zählernummer
                                         (Optional)</label>
-                                    <input type="text" id="catMeterId" placeholder="z.B. 01XYZ99"
-                                        class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 outline-none focus:border-primary-500 text-sm">
+                                    <div class="relative">
+                                        <input type="text" id="catMeterId" placeholder="z.B. 01XYZ99"
+                                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 pr-10 outline-none focus:border-primary-500 text-sm">
+                                        <button type="button" onclick="openOcrCamera('catMeterId', 'text')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-white transition-colors" title="Mit Kamera scannen">
+                                            <i data-lucide="camera" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="sm:col-span-2">
                                     <label
                                         class="block text-xs font-medium text-gray-400 mb-1">Start-Zählerstand*</label>
-                                    <input type="number" step="0.01" id="catStartValue" required placeholder="1234.56"
-                                        class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 outline-none focus:border-primary-500 text-sm font-mono">
+                                    <div class="relative">
+                                        <input type="number" step="0.01" id="catStartValue" required placeholder="1234.56"
+                                            class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 pr-10 outline-none focus:border-primary-500 text-sm font-mono">
+                                        <button type="button" onclick="openOcrCamera('catStartValue', 'number')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-white transition-colors" title="Mit Kamera scannen">
+                                            <i data-lucide="camera" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1154,6 +1164,7 @@
         let detailChartInstance = null;
         let confirmCallback = null;
         let activeOcrTargetInputId = null; // Remembers which input to fill
+        let activeOcrMode = 'number'; // 'number' or 'text'
 
         // --- Firebase Auth & Setup Logic ---
         const authLoadingView = document.getElementById('authLoadingView');
@@ -2795,9 +2806,10 @@
         // ==========================================
         let ocrVideoStream = null;
 
-        async function openOcrCamera(targetInputId) {
-            console.log("Opening OCR Camera for target:", targetInputId);
+        async function openOcrCamera(targetInputId, mode = 'number') {
+            console.log("Opening OCR Camera for target:", targetInputId, "mode:", mode);
             activeOcrTargetInputId = targetInputId;
+            activeOcrMode = mode;
             const modal = document.getElementById('ocrCameraModal');
             const video = document.getElementById('ocrVideoFeed');
 
@@ -2883,8 +2895,8 @@
                 // Calculate Luminance
                 const luma = data[i] * 0.2126 + data[i + 1] * 0.7152 + data[i + 2] * 0.0722;
 
-                // Boost contrast (factor of 1.5)
-                const contrastFactor = 1.5;
+                // Boost contrast (factor depends on mode)
+                const contrastFactor = activeOcrMode === 'number' ? 2.0 : 1.5;
                 let c = ((luma - 128) * contrastFactor) + 128;
                 c = Math.max(0, Math.min(255, c)); // clamp
 
@@ -2894,27 +2906,41 @@
             }
             cropCtx.putImageData(imgData, 0, 0);
 
+            // Double the size of the canvas to improve OCR accuracy
+            const scaledCanvas = document.createElement('canvas');
+            scaledCanvas.width = cropWidth * 2;
+            scaledCanvas.height = cropHeight * 2;
+            const scaledCtx = scaledCanvas.getContext('2d');
+            scaledCtx.drawImage(cropCanvas, 0, 0, scaledCanvas.width, scaledCanvas.height);
+
             // Close camera UI immediately so user can see progress toast
             closeOcrCamera();
 
-            const loadingToast = showToast('Zahlen werden erkannt...', 'loading');
+            const loadingToast = showToast(activeOcrMode === 'number' ? 'Zahlen werden erkannt...' : 'Text wird erkannt...', 'loading');
 
             try {
-                console.log("Starting Tesseract recognition optimized for numbers...");
+                console.log("Starting Tesseract recognition optimized for " + activeOcrMode + "...");
 
                 // Create worker explicitly to set custom parameters
                 const worker = await Tesseract.createWorker('eng', 1, {
                     logger: m => console.log(m)
                 });
 
-                await worker.setParameters({
-                    // Only recognize numbers, commas, and dots to prevent alphabet hallucinations
-                    tessedit_char_whitelist: '0123456789.,',
-                    // Page Segmentation Mode 7: Treat the image as a single text line
-                    tessedit_pageseg_mode: '7',
-                });
+                if (activeOcrMode === 'number') {
+                    await worker.setParameters({
+                        // Only recognize numbers, commas, and dots to prevent alphabet hallucinations
+                        tessedit_char_whitelist: '0123456789.,',
+                        // Page Segmentation Mode 7: Treat the image as a single text line
+                        tessedit_pageseg_mode: '7',
+                    });
+                } else {
+                    await worker.setParameters({
+                        // Text mode: don't restrict charset
+                        tessedit_pageseg_mode: '7',
+                    });
+                }
 
-                const result = await worker.recognize(cropCanvas);
+                const result = await worker.recognize(scaledCanvas);
                 const text = result.data.text;
                 console.log("OCR Recognition finished:", text);
 
@@ -2922,22 +2948,33 @@
 
                 dismissToast(loadingToast);
 
-                const cleanedText = text.replace(/\s+/g, '');
-                const matches = cleanedText.match(/\d+([\.,]\d+)?/g);
+                if (activeOcrMode === 'number') {
+                    const cleanedText = text.replace(/\s+/g, '');
+                    const matches = cleanedText.match(/\d+([\.,]\d+)?/g);
 
-                if (matches && matches.length > 0) {
-                    let bestMatch = matches.reduce((a, b) => a.length > b.length ? a : b);
-                    let val = bestMatch.replace(',', '.');
-                    const floatVal = parseFloat(val);
+                    if (matches && matches.length > 0) {
+                        let bestMatch = matches.reduce((a, b) => a.length > b.length ? a : b);
+                        let val = bestMatch.replace(',', '.');
+                        const floatVal = parseFloat(val);
 
-                    if (!isNaN(floatVal)) {
-                        document.getElementById(activeOcrTargetInputId).value = floatVal.toFixed(2);
-                        showToast(`Erkannte Zahl: ${floatVal.toFixed(2)}`, 'success');
+                        if (!isNaN(floatVal)) {
+                            document.getElementById(activeOcrTargetInputId).value = floatVal.toFixed(2);
+                            showToast(`Erkannte Zahl: ${floatVal.toFixed(2)}`, 'success');
+                        } else {
+                            showToast('Zahl erkannt aber ungültig im Bildausschnitt.', 'error');
+                        }
                     } else {
-                        showToast('Zahl erkannt aber ungültig im Bildausschnitt.', 'error');
+                        showToast('Es konnte keine Zahl im Sichtfeld erkannt werden.', 'error');
                     }
                 } else {
-                    showToast('Es konnte keine Zahl im Sichtfeld erkannt werden.', 'error');
+                    // Text Mode (e.g. Meter ID)
+                    const cleanedText = text.replace(/[^a-zA-Z0-9-]/g, '').trim();
+                    if (cleanedText.length > 0) {
+                        document.getElementById(activeOcrTargetInputId).value = cleanedText;
+                        showToast(`Erkannter Text: ${cleanedText}`, 'success');
+                    } else {
+                        showToast('Es konnte kein Text im Sichtfeld erkannt werden.', 'error');
+                    }
                 }
             } catch (err) {
                 console.error('OCR Error', err);
