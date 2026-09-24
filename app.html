@@ -399,6 +399,10 @@
                                         class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2">
                                         <i data-lucide="upload" class="w-4 h-4"></i> Import (V1)
                                     </button>
+                                    <button onclick="closeMobileMenuHack(); openContactModal('Verbesserung')"
+                                        class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
+                                        <i data-lucide="message-square" class="w-4 h-4"></i> Verbesserung
+                                    </button>
                                     <button onclick="closeMobileMenuHack(); openExportModal()"
                                         class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
                                         <i data-lucide="download" class="w-4 h-4"></i> Export CSV
@@ -625,31 +629,39 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-400 mb-1">Name des Bereichs*</label>
-                                <input type="text" id="catName" list="catNameSuggestions" required
-                                    placeholder="z.B. Strom"
-                                    class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 outline-none focus:border-primary-500">
-                                <datalist id="catNameSuggestions">
-                                    <option value="Strom">
-                                    <option value="Wasser">
-                                    <option value="Gas">
-                                    <option value="E-Auto">
-                                    <option value="Solar">
-                                    <option value="Solarthermie">
-                                    <option value="Fernwärme">
-                                    <option value="Pellet">
-                                </datalist>
+                                <div class="relative mb-2">
+                                    <select id="catName" onchange="toggleCustomCatName()" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 outline-none focus:border-primary-500 appearance-none">
+                                        <option value="Strom">Strom</option>
+                                        <option value="Gas">Gas</option>
+                                        <option value="Wasser kalt">Wasser kalt</option>
+                                        <option value="Wasser heiß">Wasser heiß</option>
+                                        <option value="Anderes">Anderes</option>
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                                        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                                    </div>
+                                </div>
+                                <div id="customCatNameContainer" class="hidden">
+                                    <input type="text" id="customCatName" placeholder="z.B. Solar" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 outline-none focus:border-primary-500">
+                                </div>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-400 mb-1">Einheit*</label>
-                                <input type="text" id="catUnit" list="catUnitSuggestions" required
-                                    placeholder="z.B. kWh, m³, kg"
-                                    class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 outline-none focus:border-primary-500">
-                                <datalist id="catUnitSuggestions">
-                                    <option value="kWh">
-                                    <option value="m³">
-                                    <option value="kg">
-                                    <option value="Liter">
-                                </datalist>
+                                <div class="relative mb-2">
+                                    <select id="catUnit" onchange="toggleCustomCatUnit()" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 outline-none focus:border-primary-500 appearance-none">
+                                        <option value="kWh">kWh</option>
+                                        <option value="m³">m³</option>
+                                        <option value="kg">kg</option>
+                                        <option value="t">t</option>
+                                        <option value="Anderes">Anderes</option>
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                                        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                                    </div>
+                                </div>
+                                <div id="customCatUnitContainer" class="hidden">
+                                    <input type="text" id="customCatUnit" placeholder="z.B. Liter" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2.5 outline-none focus:border-primary-500">
+                                </div>
                             </div>
                         </div>
 
@@ -2197,10 +2209,42 @@
             modal.classList.add('flex');
         }
 
+        function toggleCustomCatName() {
+            const val = document.getElementById('catName').value;
+            const container = document.getElementById('customCatNameContainer');
+            const input = document.getElementById('customCatName');
+            if (val === 'Anderes') {
+                container.classList.remove('hidden');
+                input.setAttribute('required', 'true');
+            } else {
+                container.classList.add('hidden');
+                input.removeAttribute('required');
+            }
+        }
+
+        function toggleCustomCatUnit() {
+            const val = document.getElementById('catUnit').value;
+            const container = document.getElementById('customCatUnitContainer');
+            const input = document.getElementById('customCatUnit');
+            if (val === 'Anderes') {
+                container.classList.remove('hidden');
+                input.setAttribute('required', 'true');
+            } else {
+                container.classList.add('hidden');
+                input.removeAttribute('required');
+            }
+        }
+
         async function saveCategory(e) {
             e.preventDefault();
-            const name = document.getElementById('catName').value.trim();
-            const unit = document.getElementById('catUnit').value.trim();
+            let name = document.getElementById('catName').value.trim();
+            if (name === 'Anderes') {
+                name = document.getElementById('customCatName').value.trim();
+            }
+            let unit = document.getElementById('catUnit').value.trim();
+            if (unit === 'Anderes') {
+                unit = document.getElementById('customCatUnit').value.trim();
+            }
             const icon = document.getElementById('catIcon').value;
             const color = document.getElementById('catColor').value;
             const comment = document.getElementById('catComment').value.trim();
@@ -2901,6 +2945,87 @@
                     console.log('ServiceWorker registration failed:', err);
                 });
             });
+        }
+    </script>
+
+    <!-- Contact Modal -->
+    <div id="contactModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-gray-950/80 backdrop-blur-sm" onclick="closeContactModal()"></div>
+        <div class="relative w-full max-w-md bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl flex flex-col slide-up">
+            <div class="flex justify-between items-center p-4 border-b border-gray-800">
+                <h3 class="text-xl font-bold text-white">Kontakt & Verbesserung</h3>
+                <button onclick="closeContactModal()" class="text-gray-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[80vh]">
+                <form id="contactForm" onsubmit="sendContactForm(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Betreff</label>
+                        <div class="relative">
+                            <select id="contactSubject" onchange="toggleCustomContactSubject()" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 outline-none focus:border-primary-500 transition-colors appearance-none">
+                                <option value="Verbesserung">Verbesserung</option>
+                                <option value="Frage">Frage</option>
+                                <option value="Spenden">Spenden</option>
+                                <option value="Amazon">Amazon</option>
+                                <option value="Anderes">Anderes</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="customContactSubjectContainer" class="hidden">
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Dein Betreff</label>
+                        <input type="text" id="customContactSubject" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 outline-none focus:border-primary-500 transition-colors" placeholder="Bitte beschreiben...">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Nachricht</label>
+                        <textarea id="contactMessage" rows="5" required class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 outline-none focus:border-primary-500 transition-colors resize-none" placeholder="Wie können wir dir helfen?"></textarea>
+                    </div>
+                    <button type="submit" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-primary-500/20">
+                        Absenden
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openContactModal(defaultSubject = 'Verbesserung') {
+            document.getElementById('contactForm').reset();
+            document.getElementById('contactSubject').value = defaultSubject;
+            toggleCustomContactSubject();
+            
+            const modal = document.getElementById('contactModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeContactModal() {
+            const modal = document.getElementById('contactModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function toggleCustomContactSubject() {
+            const subject = document.getElementById('contactSubject').value;
+            const customContainer = document.getElementById('customContactSubjectContainer');
+            const customInput = document.getElementById('customContactSubject');
+            
+            if (subject === 'Anderes') {
+                customContainer.classList.remove('hidden');
+                customInput.setAttribute('required', 'true');
+            } else {
+                customContainer.classList.add('hidden');
+                customInput.removeAttribute('required');
+            }
+        }
+
+        function sendContactForm(e) {
+            e.preventDefault();
+            alert('Vielen Dank! Deine Nachricht wurde (simuliert) versendet.');
+            closeContactModal();
         }
     </script>
 </body>
