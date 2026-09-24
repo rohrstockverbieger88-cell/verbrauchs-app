@@ -151,6 +151,18 @@
             </div>
             <h2 class="text-xl font-bold text-center mb-6" id="loginFormTitle">Anmelden</h2>
             <form id="loginForm" class="space-y-4">
+                <div id="registerFieldsTop" class="hidden space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Vorname</label>
+                            <input type="text" id="regFirstName" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Nachname</label>
+                            <input type="text" id="regLastName" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
+                        </div>
+                    </div>
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1">E-Mail</label>
                     <input type="email" id="loginEmail" required
@@ -159,10 +171,22 @@
                 <div>
                     <div class="flex justify-between items-center mb-1">
                         <label class="block text-sm font-medium text-gray-400">Passwort</label>
-                        <button type="button" onclick="forgotPassword()" class="text-xs text-primary-500 hover:text-primary-400 transition">Passwort vergessen?</button>
+                        <button type="button" id="forgotPwdBtn" onclick="forgotPassword()" class="text-xs text-primary-500 hover:text-primary-400 transition">Passwort vergessen?</button>
                     </div>
                     <input type="password" id="loginPassword" required
                         class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
+                </div>
+                <div id="registerFieldsBottom" class="hidden space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Passwort bestätigen</label>
+                        <input type="password" id="regPasswordConfirm" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <input type="checkbox" id="regPrivacy" class="mt-1 w-4 h-4 bg-gray-950 border border-gray-800 rounded text-primary-500 focus:ring-primary-500">
+                        <label for="regPrivacy" class="text-sm text-gray-400">
+                            Ich akzeptiere die <a href="datenschutz.html" target="_blank" class="text-primary-500 hover:underline">Datenschutzbestimmungen</a> und die <a href="agb.html" target="_blank" class="text-primary-500 hover:underline">Nutzungsbedingungen</a>.
+                        </label>
+                    </div>
                 </div>
                 <button type="submit" id="loginSubmitBtn"
                     class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-3 rounded-lg flex justify-center items-center gap-2 shadow-lg hover:shadow-primary-500/20 transition-all mt-4">
@@ -1099,14 +1123,37 @@
             const title = document.getElementById('loginFormTitle');
             const btnText = document.querySelector('#loginSubmitBtn span');
             const toggleBtn = document.querySelector('button[onclick="toggleRegisterMode()"]');
+            
+            const fieldsTop = document.getElementById('registerFieldsTop');
+            const fieldsBottom = document.getElementById('registerFieldsBottom');
+            const forgotBtn = document.getElementById('forgotPwdBtn');
+
             if (isRegisterMode) {
                 title.innerText = "Registrieren";
                 btnText.innerText = "Konto erstellen";
                 toggleBtn.innerHTML = 'Bereits ein Konto? <span class="text-primary-500">Anmelden</span>';
+                
+                fieldsTop.classList.remove('hidden');
+                fieldsBottom.classList.remove('hidden');
+                forgotBtn.classList.add('hidden');
+                
+                document.getElementById('regFirstName').required = true;
+                document.getElementById('regLastName').required = true;
+                document.getElementById('regPasswordConfirm').required = true;
+                document.getElementById('regPrivacy').required = true;
             } else {
                 title.innerText = "Anmelden";
                 btnText.innerText = "Anmelden";
                 toggleBtn.innerHTML = 'Noch kein Konto? <span class="text-primary-500">Registrieren</span>';
+                
+                fieldsTop.classList.add('hidden');
+                fieldsBottom.classList.add('hidden');
+                forgotBtn.classList.remove('hidden');
+                
+                document.getElementById('regFirstName').required = false;
+                document.getElementById('regLastName').required = false;
+                document.getElementById('regPasswordConfirm').required = false;
+                document.getElementById('regPrivacy').required = false;
             }
         }
         
@@ -1128,10 +1175,30 @@
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
             const pwd = document.getElementById('loginPassword').value;
+            
             try {
                 if (isRegisterMode) {
+                    const pwdConfirm = document.getElementById('regPasswordConfirm').value;
+                    const firstName = document.getElementById('regFirstName').value;
+                    const lastName = document.getElementById('regLastName').value;
+                    const privacyChecked = document.getElementById('regPrivacy').checked;
+                    
+                    if (pwd !== pwdConfirm) {
+                        return showToast("Passwörter stimmen nicht überein!", "error");
+                    }
+                    if (!privacyChecked) {
+                        return showToast("Bitte akzeptiere die Datenschutzbestimmungen.", "error");
+                    }
+                    
                     const userCred = await auth.createUserWithEmailAndPassword(email, pwd);
-                    await db.collection("users").doc(userCred.user.uid).set({ email, role: "User" });
+                    await db.collection("users").doc(userCred.user.uid).set({ 
+                        email, 
+                        firstName,
+                        lastName,
+                        name: firstName + " " + lastName,
+                        role: "User",
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
                 } else {
                     await auth.signInWithEmailAndPassword(email, pwd);
                 }
