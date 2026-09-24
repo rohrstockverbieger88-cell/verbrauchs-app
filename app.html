@@ -590,23 +590,40 @@
                 </button>
             </div>
 
-            <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-white mb-4">Registrierte Benutzer</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr
-                                    class="text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-800">
-                                    <th class="pb-3 pr-4">Email</th>
-                                    <th class="pb-3 px-4">Rolle</th>
-                                    <th class="pb-3 pl-4 text-right">Aktionen</th>
-                                </tr>
-                            </thead>
-                            <tbody id="adminUsersList" class="divide-y divide-gray-800 text-sm">
-                                <!-- JS Injected Users -->
-                            </tbody>
-                        </table>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Users List -->
+                <div class="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4">Registrierte Benutzer</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr
+                                        class="text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-800">
+                                        <th class="pb-3 pr-4">Email</th>
+                                        <th class="pb-3 px-4">Rolle</th>
+                                        <th class="pb-3 pl-4 text-right">Aktionen</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminUsersList" class="divide-y divide-gray-800 text-sm">
+                                    <!-- JS Injected Users -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Notes -->
+                <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-2xl flex flex-col">
+                    <div class="p-6 flex-1 flex flex-col">
+                        <h3 class="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                            <i data-lucide="sticky-note" class="w-5 h-5 text-yellow-500"></i> Interne Notizen
+                        </h3>
+                        <p class="text-xs text-gray-400 mb-4">Nur für Admins sichtbar. Ideal für Zugangsdaten (z.B. E-Mail Passwörter).</p>
+                        <textarea id="adminNotesContent" rows="8" placeholder="Hier Zugangsdaten eintragen..." class="w-full flex-1 bg-gray-800 border border-gray-700 text-white rounded-lg p-3 outline-none focus:border-primary-500 transition-colors resize-none mb-4 font-mono text-sm"></textarea>
+                        <button onclick="saveAdminNotes()" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
+                            <i data-lucide="save" class="w-4 h-4"></i> Notizen speichern
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1566,6 +1583,37 @@
             } catch (err) {
                 console.error(err);
                 showToast("Fehler beim Laden der Benutzer", "error");
+            }
+
+            // Load Admin Notes
+            try {
+                const notesDoc = await db.collection('admin').doc('settings').get();
+                if (notesDoc.exists) {
+                    document.getElementById('adminNotesContent').value = notesDoc.data().notes || '';
+                } else {
+                    document.getElementById('adminNotesContent').value = '';
+                }
+            } catch (err) {
+                console.error("Notes error:", err);
+            }
+        }
+
+        async function saveAdminNotes() {
+            const btn = event.currentTarget;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Speichere...';
+            lucide.createIcons();
+
+            try {
+                const text = document.getElementById('adminNotesContent').value;
+                await db.collection('admin').doc('settings').set({ notes: text }, { merge: true });
+                showToast('Notizen gespeichert', 'success');
+            } catch (err) {
+                console.error("Error saving notes:", err);
+                showToast('Fehler beim Speichern', 'error');
+            } finally {
+                btn.innerHTML = originalHtml;
+                lucide.createIcons();
             }
         }
 
