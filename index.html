@@ -428,6 +428,14 @@
             const finalSubject = subjectSelect === 'Anderes' ? customSubject : subjectSelect;
 
             try {
+                // 1. Send via Vercel Backend (Email)
+                fetch('/api/contact', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, subject: finalSubject, message })
+                }).catch(e => console.error("API Error:", e));
+
+                // 2. Save to Firestore (Admin Inbox)
                 await db.collection('messages').add({
                     email: email,
                     subject: finalSubject,

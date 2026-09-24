@@ -1696,9 +1696,12 @@
                             document.getElementById('navAdminBtn').appendChild(badge);
                         }
                         badge.textContent = snap.size;
-                    } else if (badge) {
-                        badge.remove();
+                        window.adminUnreadCount = snap.size;
+                    } else {
+                        if (badge) badge.remove();
+                        window.adminUnreadCount = 0;
                     }
+                    updateNotificationUI();
                 } catch(err) {
                     // Ignore, maybe no permission yet
                 }
@@ -1854,13 +1857,15 @@
 
         function updateNotificationUI() {
             const activeNotifs = notifications.filter(n => !n.isResolved);
+            const adminCount = window.adminUnreadCount || 0;
+            const totalCount = activeNotifs.length + adminCount;
             const badge = document.getElementById('notificationBadge');
             const list = document.getElementById('notificationList');
 
             if (!badge || !list) return;
 
-            if (activeNotifs.length > 0) {
-                badge.textContent = activeNotifs.length;
+            if (totalCount > 0) {
+                badge.textContent = totalCount;
                 badge.classList.remove('hidden');
                 badge.classList.add('flex');
             } else {
@@ -1869,9 +1874,31 @@
             }
 
             list.innerHTML = '';
-            if (activeNotifs.length === 0) {
+            if (totalCount === 0) {
                 list.innerHTML = '<div class="px-4 py-3 text-sm text-gray-400 text-center">Keine neuen Benachrichtigungen</div>';
             } else {
+                // Admin Notifications First
+                if (adminCount > 0) {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left px-4 py-3 hover:bg-gray-800 transition flex items-center gap-3 border-b border-gray-800 last:border-0";
+                    btn.onclick = () => {
+                        document.querySelector('#navActions .group:hover .absolute')?.classList.add('hidden');
+                        setTimeout(() => document.querySelector('#navActions .group .absolute')?.classList.remove('hidden'), 500);
+                        showAdminDashboard();
+                    };
+                    btn.innerHTML = `
+                        <div class="w-8 h-8 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                            <i data-lucide="mail" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium text-white">Neue Kontaktanfragen</div>
+                            <div class="text-xs text-gray-400">Du hast ${adminCount} ungelesene Nachricht(en)</div>
+                        </div>
+                    `;
+                    list.appendChild(btn);
+                }
+
+                // Normal Notifications
                 const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
                 activeNotifs.forEach(n => {
                     const cat = categories.find(c => c.id === n.categoryId);
@@ -3263,6 +3290,14 @@
             const finalSubject = subjectSelect === 'Anderes' ? customSubject : subjectSelect;
 
             try {
+                // 1. Send via Vercel Backend (Email)
+                fetch('/api/contact', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, subject: finalSubject, message })
+                }).catch(e => console.error("API Error:", e));
+
+                // 2. Save to Firestore (Admin Inbox)
                 await db.collection('messages').add({
                     email: email,
                     subject: finalSubject,
