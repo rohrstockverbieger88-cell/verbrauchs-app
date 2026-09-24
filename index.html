@@ -303,6 +303,10 @@
             <div class="p-6 overflow-y-auto max-h-[80vh]">
                 <form id="contactForm" onsubmit="sendContactForm(event)" class="space-y-4">
                     <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-1">Deine E-Mail</label>
+                        <input type="email" id="contactEmail" required class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg p-3 outline-none focus:border-primary-500 transition-colors" placeholder="name@beispiel.de">
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-slate-400 mb-1">Betreff</label>
                         <div class="relative">
                             <select id="contactSubject" onchange="toggleCustomContactSubject()" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg p-3 outline-none focus:border-primary-500 transition-colors appearance-none">
