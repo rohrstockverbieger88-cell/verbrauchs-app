@@ -1714,6 +1714,12 @@
             if (btn && menu && !btn.contains(event.target) && !menu.contains(event.target)) {
                 closeMobileMenuHack();
             }
+            
+            const btnObj = document.getElementById('menuToggleButtonObject');
+            const menuObj = document.getElementById('mobileMenuDropdownObject');
+            if (btnObj && menuObj && !btnObj.contains(event.target) && !menuObj.contains(event.target)) {
+                closeMobileMenuObjectHack();
+            }
         });
 
         function showAdminDashboard() {
