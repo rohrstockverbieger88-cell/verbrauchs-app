@@ -1214,66 +1214,6 @@
             </div>
         </div>
 
-        <!-- Change Password Modal -->
-        <div id="changePasswordModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
-            <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity"
-                onclick="closeModal('changePasswordModal')"></div>
-            <div class="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-sm slide-up p-5">
-                <div class="flex justify-between items-center border-b border-gray-800 pb-3 mb-4">
-                    <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="key"
-                            class="w-5 h-5 text-gray-400"></i> Passwort ändern</h3>
-                    <button onclick="closeModal('changePasswordModal')" class="text-gray-400 hover:text-white"><i
-                            data-lucide="x" class="w-5 h-5"></i></button>
-                </div>
-                <form id="changePasswordForm" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Neues Passwort</label>
-                        <input type="password" id="newPassword1" required minlength="6"
-                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Passwort wiederholen</label>
-                        <input type="password" id="newPassword2" required minlength="6"
-                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
-                    </div>
-                    <button type="submit"
-                        class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-3 rounded-lg flex justify-center items-center gap-2 mt-4">
-                        Passwort aktualisieren
-                    </button>
-                </form>
-            </div>
-        </div><!-- Create User Modal -->
-        <div id="createUserModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
-            <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity"
-                onclick="closeModal('createUserModal')"></div>
-            <div class="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-sm slide-up p-5">
-                <div class="flex justify-between items-center border-b border-gray-800 pb-3 mb-4">
-                    <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="user-plus"
-                            class="w-5 h-5 text-gray-400"></i> Benutzer anlegen</h3>
-                    <button onclick="closeModal('createUserModal')" class="text-gray-400 hover:text-white"><i
-                            data-lucide="x" class="w-5 h-5"></i></button>
-                </div>
-                <form id="createUserForm" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1">E-Mail Adresse</label>
-                        <input type="email" id="newUserInputEmail" required
-                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors"
-                            placeholder="max@beispiel.de">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Start-Passwort</label>
-                        <input type="password" id="newUserInputPassword" value="123456" required minlength="6"
-                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
-                        <p class="text-xs text-gray-500 mt-1">Standardmäßig: 123456. Der Nutzer kann es später selbst
-                            ändern.</p>
-                    </div>
-                    <button type="submit"
-                        class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-3 rounded-lg flex justify-center items-center gap-2 mt-4">
-                        Benutzer erstellen
-                    </button>
-                </form>
-            </div>
-        </div>
 
     </div> <!-- End Main App Container -->
 
@@ -1777,6 +1717,11 @@
             closeMobileMenuHack();
             closeMobileMenuObjectHack();
             if (!isAdmin) return showToast("Keine Berechtigung", "error");
+            
+            document.getElementById('objectSelectionView').classList.add('hidden');
+            document.getElementById('appContainer').classList.remove('hidden');
+            document.getElementById('appContainer').classList.add('flex');
+            
             document.getElementById('dashboardView').classList.add('hidden');
             document.getElementById('detailView').classList.add('hidden');
             document.getElementById('inboxView')?.classList.add('hidden');
@@ -3616,6 +3561,67 @@
             });
         }
     </script>
+
+        <!-- Change Password Modal -->
+        <div id="changePasswordModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+            <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity"
+                onclick="closeModal('changePasswordModal')"></div>
+            <div class="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-sm slide-up p-5">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-3 mb-4">
+                    <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="key"
+                            class="w-5 h-5 text-gray-400"></i> Passwort ändern</h3>
+                    <button onclick="closeModal('changePasswordModal')" class="text-gray-400 hover:text-white"><i
+                            data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <form id="changePasswordForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Neues Passwort</label>
+                        <input type="password" id="newPassword1" required minlength="6"
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Passwort wiederholen</label>
+                        <input type="password" id="newPassword2" required minlength="6"
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
+                    </div>
+                    <button type="submit"
+                        class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-3 rounded-lg flex justify-center items-center gap-2 mt-4">
+                        Passwort aktualisieren
+                    </button>
+                </form>
+            </div>
+        </div><!-- Create User Modal -->
+        <div id="createUserModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+            <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm transition-opacity"
+                onclick="closeModal('createUserModal')"></div>
+            <div class="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-sm slide-up p-5">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-3 mb-4">
+                    <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="user-plus"
+                            class="w-5 h-5 text-gray-400"></i> Benutzer anlegen</h3>
+                    <button onclick="closeModal('createUserModal')" class="text-gray-400 hover:text-white"><i
+                            data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <form id="createUserForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">E-Mail Adresse</label>
+                        <input type="email" id="newUserInputEmail" required
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors"
+                            placeholder="max@beispiel.de">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Start-Passwort</label>
+                        <input type="password" id="newUserInputPassword" value="123456" required minlength="6"
+                            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors">
+                        <p class="text-xs text-gray-500 mt-1">Standardmäßig: 123456. Der Nutzer kann es später selbst
+                            ändern.</p>
+                    </div>
+                    <button type="submit"
+                        class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-3 rounded-lg flex justify-center items-center gap-2 mt-4">
+                        Benutzer erstellen
+                    </button>
+                </form>
+            </div>
+        </div>
 
     <!-- Contact Modal -->
     <div id="contactModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">

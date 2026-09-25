@@ -1,4 +1,4 @@
-const CACHE_NAME = 'verbrauch-v49';
+const CACHE_NAME = 'verbrauch-v50';
 const urlsToCache = [
   './',
   './app.html',
