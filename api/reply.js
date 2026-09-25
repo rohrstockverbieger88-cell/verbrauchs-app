@@ -5,7 +5,7 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const { to, subject, message } = req.body;
+  const { to, subject, message, includeSignature } = req.body;
 
   if (!to || !message) {
     return res.status(400).json({ message: 'Missing fields' });
@@ -22,11 +22,15 @@ module.exports = async function handler(req, res) {
   });
 
   try {
+    const finalMessage = includeSignature !== false 
+        ? `${message}\n\n---\nViele Grüße,\nDein Metraxo Team`
+        : message;
+
     await transporter.sendMail({
       from: process.env.GMX_EMAIL,
       to: to,
       subject: `RE: ${subject || 'Metraxo Anfrage'}`,
-      text: `${message}\n\n---\nViele Grüße,\nDein Metraxo Team`
+      text: finalMessage
     });
 
     res.status(200).json({ success: true });

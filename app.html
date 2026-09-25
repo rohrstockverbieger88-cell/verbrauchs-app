@@ -716,6 +716,10 @@
                     <div id="replySection" class="hidden border-t border-gray-800 pt-6 mt-6">
                         <h4 class="text-sm font-semibold text-white mb-3">Antwort schreiben</h4>
                         <textarea id="replyMessageText" rows="5" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 outline-none focus:border-primary-500 transition-colors resize-none mb-3 text-sm" placeholder="Deine Antwort..."></textarea>
+                        <div class="flex items-center gap-2 mb-3">
+                            <input type="checkbox" id="replySendSignature" checked class="w-4 h-4 text-blue-600 bg-gray-800 border-gray-700 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer">
+                            <label for="replySendSignature" class="text-sm text-gray-400 cursor-pointer">Signatur anhängen</label>
+                        </div>
                         <div class="flex justify-end gap-3">
                             <button type="button" onclick="document.getElementById('replySection').classList.add('hidden')" class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">Abbrechen</button>
                             <button type="button" id="sendReplyBtn" onclick="sendReply()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20">
@@ -1833,6 +1837,8 @@
             if (!text) return showToast("Bitte einen Text eingeben", "error");
             if (!currentReplyEmail) return showToast("Absender hat keine E-Mail hinterlegt", "error");
             
+            const includeSignature = document.getElementById('replySendSignature').checked;
+            
             const btn = document.getElementById('sendReplyBtn');
             const originalHtml = btn.innerHTML;
             btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Sende...';
@@ -1845,7 +1851,8 @@
                     body: JSON.stringify({
                         to: currentReplyEmail,
                         subject: currentReplySubject,
-                        message: text
+                        message: text,
+                        includeSignature: includeSignature
                     })
                 });
 
