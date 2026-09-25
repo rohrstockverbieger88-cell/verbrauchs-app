@@ -1550,20 +1550,25 @@
             document.getElementById('changePasswordModal').classList.add('flex');
         }
 
-        document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const p1 = document.getElementById('newPassword1').value;
-            const p2 = document.getElementById('newPassword2').value;
-            if (p1 !== p2) return showToast("Passwörter stimmen nicht überein!", "error");
+        window.addEventListener('DOMContentLoaded', () => {
+            const cpForm = document.getElementById('changePasswordForm');
+            if(cpForm) {
+                cpForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const p1 = document.getElementById('newPassword1').value;
+                    const p2 = document.getElementById('newPassword2').value;
+                    if (p1 !== p2) return showToast("Passwörter stimmen nicht überein!", "error");
 
-            if (auth.currentUser) {
-                try {
-                    await auth.currentUser.updatePassword(p1);
-                    showToast("Passwort erfolgreich geändert.", "success");
-                    closeModal('changePasswordModal');
-                } catch (error) {
-                    showToast("Fehler: " + error.message + " (Ggf. neu anmelden erforderlich)", "error");
-                }
+                    if (auth.currentUser) {
+                        try {
+                            await auth.currentUser.updatePassword(p1);
+                            showToast("Passwort erfolgreich geändert.", "success");
+                            closeModal('changePasswordModal');
+                        } catch (error) {
+                            showToast("Fehler: " + error.message + " (Ggf. neu anmelden erforderlich)", "error");
+                        }
+                    }
+                });
             }
         });
 
