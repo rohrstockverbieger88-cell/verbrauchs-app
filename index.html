@@ -302,6 +302,16 @@
             </div>
             <div class="p-6 overflow-y-auto max-h-[80vh]">
                 <form id="contactForm" onsubmit="sendContactForm(event)" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-400 mb-1">Vorname</label>
+                            <input type="text" id="contactFirstName" required class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg p-3 outline-none focus:border-primary-500 transition-colors" placeholder="Max">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-400 mb-1">Nachname</label>
+                            <input type="text" id="contactLastName" required class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg p-3 outline-none focus:border-primary-500 transition-colors" placeholder="Mustermann">
+                        </div>
+                    </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-400 mb-1">Deine E-Mail</label>
                         <input type="email" id="contactEmail" required class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg p-3 outline-none focus:border-primary-500 transition-colors" placeholder="name@beispiel.de">
@@ -420,6 +430,8 @@
             btn.disabled = true;
             lucide.createIcons();
 
+            const firstName = document.getElementById('contactFirstName').value;
+            const lastName = document.getElementById('contactLastName').value;
             const email = document.getElementById('contactEmail').value;
             const subjectSelect = document.getElementById('contactSubject').value;
             const customSubject = document.getElementById('customContactSubject').value;
@@ -432,11 +444,13 @@
                 fetch('/api/contact', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, subject: finalSubject, message })
+                    body: JSON.stringify({ firstName, lastName, email, subject: finalSubject, message })
                 }).catch(e => console.error("API Error:", e));
 
                 // 2. Save to Firestore (Admin Inbox)
                 await db.collection('messages').add({
+                    firstName: firstName,
+                    lastName: lastName,
                     email: email,
                     subject: finalSubject,
                     message: message,

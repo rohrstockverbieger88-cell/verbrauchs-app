@@ -5,7 +5,7 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const { email, subject, message } = req.body;
+  const { firstName, lastName, email, subject, message } = req.body;
 
   if (!email || !message) {
     return res.status(400).json({ message: 'Missing fields' });
@@ -22,12 +22,13 @@ module.exports = async function handler(req, res) {
   });
 
   try {
+    const fullName = (firstName && lastName) ? `${firstName} ${lastName}` : (firstName || lastName || 'Unbekannt');
     await transporter.sendMail({
       from: process.env.GMX_EMAIL,
       to: process.env.GMX_EMAIL,
       replyTo: email,
       subject: `Metraxo Kontakt: ${subject}`,
-      text: `Neue Nachricht über das Metraxo Kontaktformular:\n\nAbsender: ${email}\nBetreff: ${subject}\n\nNachricht:\n${message}`
+      text: `Neue Nachricht über das Metraxo Kontaktformular:\n\nAbsender: ${fullName} (${email})\nBetreff: ${subject}\n\nNachricht:\n${message}`
     });
 
     res.status(200).json({ success: true });
