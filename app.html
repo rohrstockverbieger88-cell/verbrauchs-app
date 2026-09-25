@@ -659,7 +659,7 @@
 
         <div id="inboxView" class="hidden space-y-6 fade-in px-4 py-8 max-w-7xl mx-auto w-full">
             <div class="flex items-center gap-4 mb-8">
-                <button onclick="showDashboard()"
+                <button onclick="closeInboxView()"
                     class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
                     title="Zurück">
                     <i data-lucide="arrow-left" class="w-5 h-5"></i>
@@ -1661,11 +1661,27 @@
         function showInboxView() {
             closeMobileMenuHack();
             if (!isAdmin) return showToast("Keine Berechtigung", "error");
+            
+            // If called from object selection, switch to appContainer first
+            document.getElementById('objectSelectionView').classList.add('hidden');
+            document.getElementById('objectSelectionView').classList.remove('flex');
+            document.getElementById('appContainer').classList.remove('hidden');
+            document.getElementById('appContainer').classList.add('flex');
+            
             document.getElementById('dashboardView').classList.add('hidden');
             document.getElementById('detailView').classList.add('hidden');
             document.getElementById('adminDashboardView').classList.add('hidden');
             document.getElementById('inboxView').classList.remove('hidden');
             loadAdminMessages();
+        }
+        
+        function closeInboxView() {
+            document.getElementById('inboxView').classList.add('hidden');
+            if (currentObjectId) {
+                showDashboard();
+            } else {
+                backToObjects();
+            }
         }
 
         async function loadAdminUsers() {
