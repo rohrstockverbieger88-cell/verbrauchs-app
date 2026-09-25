@@ -3327,7 +3327,7 @@
             return map[color] || map['blue'];
         }
 
-        function showToast(message, type = 'info') {
+        function showToast(message, type = 'info', duration = 3000) {
             const c = document.getElementById('toastContainer');
             const t = document.createElement('div');
             let icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'alert-triangle' : (type === 'loading' ? 'loader-2' : 'info'));
@@ -3340,7 +3340,7 @@
 
             // Return element if caller wants to dismiss it manually (e.g. loading toast)
             if (type !== 'loading') {
-                setTimeout(() => dismissToast(t), 3000);
+                setTimeout(() => dismissToast(t), duration);
             }
             return t;
         }
