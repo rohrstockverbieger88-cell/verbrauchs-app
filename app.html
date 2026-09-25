@@ -249,9 +249,31 @@
                         <span class="font-bold text-xl tracking-tight">Metraxo</span>
                     </a>
                     <!-- Logout -->
-                    <button onclick="logoutApp()" class="text-sm text-red-400 hover:text-white hover:bg-red-900/50 flex items-center gap-2 px-3 py-2 rounded-lg transition-colors">
-                        <i data-lucide="log-out" class="w-4 h-4"></i> Abmelden
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <!-- Notifications Dropdown (Object View) -->
+                        <div class="relative group" id="navActionsObject">
+                            <button
+                                class="relative flex items-center justify-center w-9 h-9 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+                                title="Benachrichtigungen">
+                                <i data-lucide="bell" class="w-4 h-4 text-gray-300"></i>
+                                <span id="notificationBadgeObject"
+                                    class="hidden absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-gray-900">0</span>
+                            </button>
+                            <div
+                                class="absolute right-0 mt-2 w-72 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden flex flex-col">
+                                <div class="px-4 py-3 border-b border-gray-800 bg-gray-800/50 flex justify-between items-center">
+                                    <span class="text-sm font-semibold text-white">Benachrichtigungen</span>
+                                </div>
+                                <div id="notificationListObject" class="flex flex-col max-h-64 overflow-y-auto custom-scrollbar">
+                                    <!-- JS Injected -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="logoutApp()" class="text-sm text-red-400 hover:text-white hover:bg-red-900/50 flex items-center gap-2 px-3 py-2 rounded-lg transition-colors">
+                            <i data-lucide="log-out" class="w-4 h-4"></i> Abmelden
+                        </button>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -1748,7 +1770,7 @@
             currentReplyEmail = msg.email;
             currentReplySubject = msg.subject;
 
-            openModal('messageReadModal');
+            document.getElementById('messageReadModal').classList.remove('hidden'); document.getElementById('messageReadModal').classList.add('flex');
 
             if (!msg.read) {
                 try {
