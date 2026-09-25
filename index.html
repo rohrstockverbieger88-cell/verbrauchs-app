@@ -505,5 +505,13 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            if (window.location.search.includes("contact=true")) {
+                setTimeout(() => openContactModal('Frage'), 500);
+            }
+        });
+    </script>
 </body>
 </html>
