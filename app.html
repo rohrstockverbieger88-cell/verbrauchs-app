@@ -415,6 +415,11 @@
                                         class="hidden w-full text-left px-4 py-3 text-sm text-primary-400 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
                                         <i data-lucide="users" class="w-4 h-4"></i> Benutzerverwaltung
                                     </button>
+                                    <button onclick="showInboxView()" id="navInboxBtn"
+                                        class="hidden w-full text-left px-4 py-3 text-sm text-blue-400 hover:text-white hover:bg-gray-700 flex items-center justify-between border-t border-gray-700">
+                                        <div class="flex items-center gap-2"><i data-lucide="mail" class="w-4 h-4"></i> Postfach</div>
+                                        <span id="inboxMenuBadge" class="hidden bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
+                                    </button>
                                     <button onclick="closeMobileMenuHack(); openContactModal('Verbesserung')"
                                         class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
                                         <i data-lucide="message-square" class="w-4 h-4"></i> Verbesserung
@@ -628,28 +633,35 @@
                 </div>
             </div>
 
-            <!-- Messages Inbox -->
-            <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-2xl mt-6">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <i data-lucide="mail" class="w-5 h-5 text-blue-500"></i> Eingehende Nachrichten
-                    </h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-800">
-                                    <th class="pb-3 pr-4">Datum</th>
-                                    <th class="pb-3 px-4">Absender</th>
-                                    <th class="pb-3 px-4">Betreff</th>
-                                    <th class="pb-3 px-4 w-1/2">Nachricht</th>
-                                    <th class="pb-3 pl-4 text-right">Aktionen</th>
-                                </tr>
-                            </thead>
-                            <tbody id="adminMessagesList" class="divide-y divide-gray-800 text-sm">
-                                <!-- JS Injected Messages -->
-                            </tbody>
-                        </table>
-                    </div>
+        </div>
+
+        <div id="inboxView" class="hidden space-y-6 fade-in px-4 py-8 max-w-7xl mx-auto w-full">
+            <div class="flex items-center gap-4 mb-8">
+                <button onclick="showDashboard()"
+                    class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                    title="Zurück">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <h2 class="text-2xl font-bold flex items-center gap-2">
+                    <i data-lucide="mail" class="w-6 h-6 text-blue-500"></i> Postfach
+                </h2>
+            </div>
+            <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-800 bg-gray-800/50">
+                                <th class="p-4 w-12"></th>
+                                <th class="p-4">Datum</th>
+                                <th class="p-4">Absender</th>
+                                <th class="p-4">Betreff</th>
+                                <th class="p-4">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminMessagesList" class="divide-y divide-gray-800 text-sm">
+                            <!-- JS Injected Messages -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -657,6 +669,45 @@
         </main>
 
         <!-- ================== MODALS ================== -->
+
+        <!-- Message Read Modal -->
+        <div id="messageReadModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+            <div class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm shadow-sm transition-opacity" onclick="closeModal('messageReadModal')"></div>
+            <div class="relative bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-2xl slide-up max-h-[90vh] flex flex-col">
+                <div class="p-5 border-b border-gray-800 flex justify-between items-center shrink-0">
+                    <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="mail-open" class="w-5 h-5 text-blue-500"></i> Nachricht lesen</h3>
+                    <button onclick="closeModal('messageReadModal')" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <div class="p-5 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+                    <div class="grid grid-cols-2 gap-4 text-sm bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                        <div><span class="text-gray-400 block mb-1">Von:</span><span id="readMsgSender" class="text-white font-medium"></span></div>
+                        <div><span class="text-gray-400 block mb-1">Datum:</span><span id="readMsgDate" class="text-white font-medium"></span></div>
+                        <div class="col-span-2"><span class="text-gray-400 block mb-1">Betreff:</span><span id="readMsgSubject" class="text-white font-medium"></span></div>
+                    </div>
+                    <div>
+                        <span class="text-gray-400 text-sm block mb-2">Nachricht:</span>
+                        <div id="readMsgContent" class="text-white text-sm whitespace-pre-wrap bg-gray-800/30 p-4 rounded-lg border border-gray-800 leading-relaxed"></div>
+                    </div>
+                    
+                    <div id="replySection" class="hidden border-t border-gray-800 pt-6 mt-6">
+                        <h4 class="text-sm font-semibold text-white mb-3">Antwort schreiben</h4>
+                        <textarea id="replyMessageText" rows="5" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 outline-none focus:border-primary-500 transition-colors resize-none mb-3 text-sm" placeholder="Deine Antwort..."></textarea>
+                        <div class="flex justify-end gap-3">
+                            <button type="button" onclick="document.getElementById('replySection').classList.add('hidden')" class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">Abbrechen</button>
+                            <button type="button" id="sendReplyBtn" onclick="sendReply()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20">
+                                <i data-lucide="send" class="w-4 h-4"></i> Senden
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 border-t border-gray-800 flex justify-end gap-3 shrink-0 bg-gray-900/50 rounded-b-xl">
+                    <button type="button" onclick="closeModal('messageReadModal')" class="px-4 py-2 text-sm text-gray-300 hover:text-white bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">Schließen</button>
+                    <button type="button" onclick="document.getElementById('replySection').classList.remove('hidden'); document.getElementById('replyMessageText').focus();" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-500 rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-primary-500/20">
+                        <i data-lucide="reply" class="w-4 h-4"></i> Antworten
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- Add Category Modal -->
         <div id="addCategoryModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
@@ -1276,6 +1327,7 @@
                     if (role === 'admin') {
                         isAdmin = true;
                         document.getElementById('navAdminBtn').classList.remove('hidden');
+                        document.getElementById('navInboxBtn')?.classList.remove('hidden');
                         updateUnreadMessagesBadge();
                     } else {
                         isAdmin = false;
@@ -1577,8 +1629,19 @@
             if (!isAdmin) return showToast("Keine Berechtigung", "error");
             document.getElementById('dashboardView').classList.add('hidden');
             document.getElementById('detailView').classList.add('hidden');
+            document.getElementById('inboxView')?.classList.add('hidden');
             document.getElementById('adminDashboardView').classList.remove('hidden');
             loadAdminUsers();
+        }
+
+        function showInboxView() {
+            closeMobileMenuHack();
+            if (!isAdmin) return showToast("Keine Berechtigung", "error");
+            document.getElementById('dashboardView').classList.add('hidden');
+            document.getElementById('detailView').classList.add('hidden');
+            document.getElementById('adminDashboardView').classList.add('hidden');
+            document.getElementById('inboxView').classList.remove('hidden');
+            loadAdminMessages();
         }
 
         async function loadAdminUsers() {
@@ -1623,8 +1686,7 @@
                 console.error("Notes error:", err);
             }
 
-            // Load Admin Messages
-            loadAdminMessages();
+
         }
 
         async function loadAdminMessages() {
@@ -1692,14 +1754,19 @@
                         if (!badge) {
                             badge = document.createElement('span');
                             badge.id = 'adminUnreadBadge';
-                            badge.className = 'ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full';
-                            document.getElementById('navAdminBtn').appendChild(badge);
+                            badge.className = 'hidden';
+                            // no longer inject into navAdminBtn, we use inboxMenuBadge directly
+                            document.body.appendChild(badge);
                         }
                         badge.textContent = snap.size;
                         window.adminUnreadCount = snap.size;
+                        const mBadge = document.getElementById('inboxMenuBadge');
+                        if (mBadge) { mBadge.textContent = snap.size; mBadge.classList.remove('hidden'); }
                     } else {
                         if (badge) badge.remove();
                         window.adminUnreadCount = 0;
+                        const mBadge = document.getElementById('inboxMenuBadge');
+                        if (mBadge) { mBadge.classList.add('hidden'); }
                     }
                     updateNotificationUI();
                 } catch(err) {
@@ -1884,7 +1951,7 @@
                     btn.onclick = () => {
                         document.querySelector('#navActions .group:hover .absolute')?.classList.add('hidden');
                         setTimeout(() => document.querySelector('#navActions .group .absolute')?.classList.remove('hidden'), 500);
-                        showAdminDashboard();
+                        showInboxView();
                     };
                     btn.innerHTML = `
                         <div class="w-8 h-8 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
@@ -2091,6 +2158,9 @@
         // --- View Routing ---
         function renderView() {
             lucide.createIcons();
+            document.getElementById('adminDashboardView')?.classList.add('hidden');
+            document.getElementById('inboxView')?.classList.add('hidden');
+            
             if (activeCategoryId === null) {
                 document.getElementById('detailView').classList.add('hidden');
                 document.getElementById('detailView').classList.remove('block');
