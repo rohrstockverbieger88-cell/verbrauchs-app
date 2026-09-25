@@ -264,6 +264,10 @@
                                     class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2">
                                     <i data-lucide="key" class="w-4 h-4"></i> Passwort ändern
                                 </button>
+                                <button onclick="installPWA()"
+                                    class="w-full text-left px-4 py-3 text-sm text-green-400 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
+                                    <i data-lucide="smartphone" class="w-4 h-4"></i> App installieren
+                                </button>
                                 <a href="faq.html" onclick="closeMobileMenuHack(); closeMobileMenuObjectHack();"
                                     class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
                                     <i data-lucide="help-circle" class="w-4 h-4"></i> Hilfe
@@ -470,6 +474,10 @@
                                     <button onclick="closeMobileMenuHack(); openChangePasswordModal()"
                                         class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
                                         <i data-lucide="key" class="w-4 h-4"></i> Passwort ändern
+                                    </button>
+                                    <button onclick="installPWA()"
+                                        class="w-full text-left px-4 py-3 text-sm text-green-400 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
+                                        <i data-lucide="smartphone" class="w-4 h-4"></i> App installieren
                                     </button>
                                     <a href="faq.html" onclick="closeMobileMenuHack(); closeMobileMenuObjectHack();"
                                         class="w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-700 flex items-center gap-2 border-t border-gray-700">
@@ -1704,6 +1712,25 @@
             if (menu) {
                 menu.classList.add('opacity-0', 'invisible');
                 menu.classList.remove('opacity-100', 'visible');
+            }
+        }
+
+
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        async function installPWA() {
+            closeMobileMenuHack();
+            closeMobileMenuObjectHack();
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+            } else {
+                showToast("App Installation: Tippe im Menü deines Browsers (z.B. 'Teilen') auf 'Zum Home-Bildschirm'.", "info", 6000);
             }
         }
 
