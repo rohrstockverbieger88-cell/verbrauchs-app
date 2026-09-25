@@ -1167,15 +1167,18 @@
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-1">Von Datum</label>
-                            <input type="date" id="exportDateFrom" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 outline-none focus:border-primary-500 transition-colors text-sm">
+                    <div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Von Datum</label>
+                                <input type="date" id="exportDateFrom" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 outline-none focus:border-primary-500 transition-colors text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Bis Datum</label>
+                                <input type="date" id="exportDateTo" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 outline-none focus:border-primary-500 transition-colors text-sm">
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-1">Bis Datum</label>
-                            <input type="date" id="exportDateTo" class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-3 outline-none focus:border-primary-500 transition-colors text-sm">
-                        </div>
+                        <p class="text-xs text-gray-500 mt-2 text-center">Wenn freigelassen wird, wird alles exportiert.</p>
                     </div>
 
                     <button onclick="executeExport()"
@@ -2463,6 +2466,7 @@
             document.getElementById('inboxView')?.classList.add('hidden');
             
             if (activeCategoryId === null) {
+                document.getElementById('backToObjectsBtn').classList.remove('hidden');
                 document.getElementById('detailView').classList.add('hidden');
                 document.getElementById('detailView').classList.remove('block');
                 document.getElementById('dashboardView').classList.remove('hidden');
@@ -2473,6 +2477,7 @@
 
                 renderDashboard();
             } else {
+                document.getElementById('backToObjectsBtn').classList.add('hidden');
                 document.getElementById('dashboardView').classList.add('hidden');
                 document.getElementById('dashboardView').classList.remove('block');
                 document.getElementById('detailView').classList.remove('hidden');
