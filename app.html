@@ -1688,6 +1688,20 @@
             }
         }
 
+        async function toggleUserRole(userId, currentRole) {
+            const newRole = currentRole === 'admin' ? 'user' : 'admin';
+            if (!confirm(`Soll dieser Benutzer wirklich zum ${newRole.toUpperCase()} gemacht werden?`)) return;
+            try {
+                await db.collection('users').doc(userId).update({
+                    role: newRole
+                });
+                showToast(`Benutzer ist nun ${newRole.toUpperCase()}.`, "success");
+                loadAdminUsers();
+            } catch (err) {
+                console.error("Fehler beim Ändern der Rechte:", err);
+                showToast("Fehler beim Ändern der Rechte.", "error");
+            }
+        }
         async function loadAdminUsers() {
             const list = document.getElementById('adminUsersList');
             list.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-500">Lade Benutzer...</td></tr>';
@@ -1705,7 +1719,8 @@
                         </td>
                         <td class="py-3 pl-4 text-right">
                             ${doc.id !== firebase.auth().currentUser.uid ? `
-                                <button onclick="resetUserPassword('${doc.id}', '${u.email}')" class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors" title="Passwort-Reset E-Mail senden"><i data-lucide="mail" class="w-4 h-4"></i></button>
+                                <button onclick="toggleUserRole('${doc.id}', '${u.role}')" class="p-2 text-${u.role === 'admin' ? 'orange' : 'blue'}-400 hover:text-white hover:bg-${u.role === 'admin' ? 'orange' : 'blue'}-500/20 rounded-lg transition-colors" title="${u.role === 'admin' ? 'Admin-Rechte entziehen' : 'Zum Admin machen'}"><i data-lucide="${u.role === 'admin' ? 'shield-minus' : 'shield-check'}" class="w-4 h-4"></i></button>
+                                <button onclick="resetUserPassword('${doc.id}', '${u.email}')" class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors ml-1" title="Passwort-Reset E-Mail senden"><i data-lucide="mail" class="w-4 h-4"></i></button>
                                 <button onclick="deleteUserAccount('${doc.id}', '${u.email}')" class="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors ml-1" title="Benutzer löschen"><i data-lucide="user-x" class="w-4 h-4"></i></button>
                             ` : ''}
                         </td>
