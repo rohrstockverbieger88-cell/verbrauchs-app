@@ -1786,11 +1786,12 @@
                             <span class="px-2 py-1 bg-${u.role === 'admin' ? 'primary' : 'gray'}-500/20 text-${u.role === 'admin' ? 'primary' : 'gray'}-400 text-xs rounded border border-${u.role === 'admin' ? 'primary' : 'gray'}-500/30 uppercase tracking-wider font-semibold">${u.role}</span>
                         </td>
                         <td class="py-3 pl-4 text-right">
-                            ${doc.id !== firebase.auth().currentUser.uid ? `
+                            ${(doc.id !== firebase.auth().currentUser.uid && u.email !== 'bjoern_herold@web.de') ? `
                                 <button onclick="toggleUserRole('${doc.id}', '${u.role}')" class="p-2 text-${u.role === 'admin' ? 'orange' : 'blue'}-400 hover:text-white hover:bg-${u.role === 'admin' ? 'orange' : 'blue'}-500/20 rounded-lg transition-colors" title="${u.role === 'admin' ? 'Admin-Rechte entziehen' : 'Zum Admin machen'}"><i data-lucide="${u.role === 'admin' ? 'shield-minus' : 'shield-check'}" class="w-4 h-4"></i></button>
                                 <button onclick="resetUserPassword('${doc.id}', '${u.email}')" class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors ml-1" title="Passwort-Reset E-Mail senden"><i data-lucide="mail" class="w-4 h-4"></i></button>
                                 <button onclick="deleteUserAccount('${doc.id}', '${u.email}')" class="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors ml-1" title="Benutzer löschen"><i data-lucide="user-x" class="w-4 h-4"></i></button>
                             ` : ''}
+                            ${u.email === 'bjoern_herold@web.de' ? '<span class="text-xs text-primary-500 font-bold uppercase tracking-wider">Superadmin</span>' : ''}
                         </td>
                     `;
                     list.appendChild(tr);
@@ -2040,30 +2041,35 @@
             document.getElementById('createUserModal').classList.add('flex');
         }
 
-        document.getElementById('createUserForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('newUserInputEmail').value;
-            const pwd = document.getElementById('newUserInputPassword').value;
+        window.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('createUserForm');
+            if(form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const email = document.getElementById('newUserInputEmail').value;
+                    const pwd = document.getElementById('newUserInputPassword').value;
 
-            try {
-                const toast = showToast("Erstelle Benutzer...", "loading");
-                // Use secondary app to prevent logging out the admin
-                const userCred = await secondaryApp.auth().createUserWithEmailAndPassword(email, pwd);
-                await secondaryApp.auth().signOut();
+                    try {
+                        const toast = showToast("Erstelle Benutzer...", "loading");
+                        // Use secondary app to prevent logging out the admin
+                        const userCred = await secondaryApp.auth().createUserWithEmailAndPassword(email, pwd);
+                        await secondaryApp.auth().signOut();
 
-                await db.collection('users').doc(userCred.user.uid).set({
-                    email: email,
-                    role: 'user',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    status: 'active'
+                        await db.collection('users').doc(userCred.user.uid).set({
+                            email: email,
+                            role: 'user',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            status: 'active'
+                        });
+
+                        dismissToast(toast);
+                        showToast("Benutzer erfolgreich erstellt.", "success");
+                        closeModal('createUserModal');
+                        loadAdminUsers();
+                    } catch (err) {
+                        showToast("Fehler beim Erstellen: " + err.message, "error");
+                    }
                 });
-
-                dismissToast(toast);
-                showToast("Benutzer erfolgreich erstellt.", "success");
-                closeModal('createUserModal');
-                loadAdminUsers();
-            } catch (err) {
-                showToast("Fehler beim Erstellen: " + err.message, "error");
             }
         });
 
