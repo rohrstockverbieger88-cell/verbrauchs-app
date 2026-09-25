@@ -1577,6 +1577,13 @@
                         role: "User",
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
+                    
+                    auth.languageCode = 'de';
+                    await userCred.user.sendEmailVerification();
+                    showToast("Registrierung erfolgreich! Bitte bestätigen Sie Ihre E-Mail-Adresse.", "success");
+                    await auth.signOut();
+                    toggleRegisterMode();
+                    return;
                 } else {
                     const userCred = await auth.signInWithEmailAndPassword(email, pwd);
                     if (!userCred.user.emailVerified) {
