@@ -1689,6 +1689,10 @@
 
         }
 
+        let currentReplyMsgId = null;
+        let currentReplyEmail = null;
+        let currentReplySubject = null;
+
         async function loadAdminMessages() {
             const list = document.getElementById('adminMessagesList');
             list.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Lade Nachrichten...</td></tr>';
@@ -1702,18 +1706,24 @@
                 snap.forEach(doc => {
                     const msg = doc.data();
                     const tr = document.createElement('tr');
-                    tr.className = `border-b border-gray-800 hover:bg-gray-800/50 transition-colors ${msg.read ? 'opacity-60' : 'font-medium text-white'}`;
+                    tr.className = `border-b border-gray-800 hover:bg-gray-800/50 transition-colors cursor-pointer group ${msg.read ? 'text-gray-400' : 'text-white font-bold bg-gray-800/30'}`;
                     
                     const dateStr = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' }) : 'Gerade eben';
                     
+                    tr.onclick = (e) => {
+                        if (e.target.closest('button')) return; // ignore if button clicked
+                        openMessageReadModal(doc.id, msg, dateStr);
+                    };
+
                     tr.innerHTML = `
-                        <td class="py-3 pr-4 whitespace-nowrap text-xs text-gray-400">${dateStr}</td>
-                        <td class="py-3 px-4">${msg.email || 'Keine E-Mail'}</td>
-                        <td class="py-3 px-4 text-primary-400">${msg.subject || 'Kein Betreff'}</td>
-                        <td class="py-3 px-4"><div class="max-h-20 overflow-y-auto whitespace-pre-wrap text-sm">${msg.message || ''}</div></td>
-                        <td class="py-3 pl-4 text-right whitespace-nowrap">
-                            ${!msg.read ? `<button onclick="markMessageRead('${doc.id}')" class="p-2 text-emerald-400 hover:text-white hover:bg-emerald-500/20 rounded-lg transition-colors" title="Als gelesen markieren"><i data-lucide="check" class="w-4 h-4"></i></button>` : ''}
-                            <button onclick="deleteMessage('${doc.id}')" class="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors ml-1" title="Nachricht löschen"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        <td class="p-4">
+                            <i data-lucide="${msg.read ? 'mail-open' : 'mail'}" class="w-5 h-5 ${msg.read ? 'text-gray-500' : 'text-blue-500'}"></i>
+                        </td>
+                        <td class="p-4 whitespace-nowrap text-sm ${msg.read ? 'text-gray-500' : 'text-gray-300'}">${dateStr}</td>
+                        <td class="p-4">${msg.email || 'Keine E-Mail'}</td>
+                        <td class="p-4 ${msg.read ? 'text-gray-400' : 'text-blue-400'}">${msg.subject || 'Kein Betreff'}</td>
+                        <td class="p-4 text-right">
+                            <button onclick="deleteMessage('${doc.id}')" class="p-2 text-red-400 hover:text-white hover:bg-red-500/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100" title="Löschen"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </td>
                     `;
                     list.appendChild(tr);
@@ -1723,6 +1733,72 @@
             } catch (err) {
                 console.error("Error loading messages:", err);
                 list.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-400">Fehler beim Laden. (Fehlen Datenbank-Regeln?)</td></tr>';
+            }
+        }
+
+        async function openMessageReadModal(id, msg, dateStr) {
+            document.getElementById('readMsgSender').textContent = msg.email || 'Unbekannt';
+            document.getElementById('readMsgDate').textContent = dateStr;
+            document.getElementById('readMsgSubject').textContent = msg.subject || 'Kein Betreff';
+            document.getElementById('readMsgContent').textContent = msg.message || '';
+            document.getElementById('replySection').classList.add('hidden');
+            document.getElementById('replyMessageText').value = '';
+            
+            currentReplyMsgId = id;
+            currentReplyEmail = msg.email;
+            currentReplySubject = msg.subject;
+
+            openModal('messageReadModal');
+
+            if (!msg.read) {
+                try {
+                    await db.collection('messages').doc(id).update({ read: true });
+                    msg.read = true;
+                    // Refresh unread count in background
+                    updateUnreadMessagesBadge();
+                    // Mark visually read immediately
+                    loadAdminMessages();
+                } catch(e) {
+                    console.error(e);
+                }
+            }
+        }
+
+        async function sendReply() {
+            const text = document.getElementById('replyMessageText').value.trim();
+            if (!text) return showToast("Bitte einen Text eingeben", "error");
+            if (!currentReplyEmail) return showToast("Absender hat keine E-Mail hinterlegt", "error");
+            
+            const btn = document.getElementById('sendReplyBtn');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Sende...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/reply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to: currentReplyEmail,
+                        subject: currentReplySubject,
+                        message: text
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    showToast("Antwort erfolgreich gesendet!", "success");
+                    closeModal('messageReadModal');
+                } else {
+                    showToast("Fehler beim Senden: " + data.error, "error");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Fehler beim Server-Verbindungsaufbau", "error");
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                lucide.createIcons();
             }
         }
 
