@@ -26,7 +26,7 @@ module.exports = async function handler(req, res) {
       from: process.env.GMX_EMAIL,
       to: to,
       subject: `RE: ${subject || 'Metraxo Anfrage'}`,
-      text: message
+      text: `${message}\n\n---\nViele Grüße,\nDein Metraxo Team`
     });
 
     res.status(200).json({ success: true });
