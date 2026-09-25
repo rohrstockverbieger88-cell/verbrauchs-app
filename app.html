@@ -1383,10 +1383,39 @@
             }
         });
 
+
+        async function resendVerificationEmail() {
+            if (auth.currentUser && !auth.currentUser.emailVerified) {
+                try {
+                    const toast = showToast("Sende E-Mail...", "loading");
+                    auth.languageCode = 'de';
+                    await auth.currentUser.sendEmailVerification();
+                    dismissToast(toast);
+                    showToast("Bestätigungsmail erfolgreich gesendet!", "success");
+                    closeResendModal();
+                } catch(err) {
+                    showToast("Fehler beim Senden: " + err.message, "error");
+                }
+            } else {
+                showToast("Sitzung abgelaufen. Bitte erneut einloggen.", "error");
+                closeResendModal();
+            }
+        }
+        
+        function closeResendModal() {
+            document.getElementById('resendVerificationModal').classList.add('hidden');
+            document.getElementById('resendVerificationModal').classList.remove('flex');
+            auth.signOut();
+        }
+        
         auth.onAuthStateChanged(async (user) => {
             authLoadingView.classList.add('hidden');
 
             if (user) {
+                if (!user.emailVerified) {
+                    // Bleibe auf der Login-Seite, wenn die E-Mail nicht bestätigt ist
+                    return;
+                }
                 currentUser = user;
                 
                 loginView.classList.add('hidden');
@@ -1549,7 +1578,11 @@
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
                 } else {
-                    await auth.signInWithEmailAndPassword(email, pwd);
+                    const userCred = await auth.signInWithEmailAndPassword(email, pwd);
+                    if (!userCred.user.emailVerified) {
+                        document.getElementById('resendVerificationModal').classList.remove('hidden');
+                        document.getElementById('resendVerificationModal').classList.add('flex');
+                    }
                 }
             } catch (error) {
                 showToast("Fehler: " + error.message, "error");
@@ -2113,7 +2146,9 @@
                     try {
                         const toast = showToast("Erstelle Benutzer...", "loading");
                         // Use secondary app to prevent logging out the admin
+                        secondaryApp.auth().languageCode = 'de';
                         const userCred = await secondaryApp.auth().createUserWithEmailAndPassword(email, pwd);
+                        await userCred.user.sendEmailVerification();
                         await secondaryApp.auth().signOut();
 
                         await db.collection('users').doc(userCred.user.uid).set({
