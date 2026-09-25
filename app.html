@@ -1580,7 +1580,7 @@
                     
                     auth.languageCode = 'de';
                     await userCred.user.sendEmailVerification();
-                    showToast("Registrierung erfolgreich! Bitte bestätigen Sie Ihre E-Mail-Adresse.", "success");
+                    showToast("Ein Bestätigungslink wurde an Ihre E-Mail gesendet. Bitte bestätigen Sie diesen, bevor Sie sich anmelden können.", "success", 8000);
                     await auth.signOut();
                     toggleRegisterMode();
                     return;
@@ -2166,7 +2166,7 @@
                         });
 
                         dismissToast(toast);
-                        showToast("Benutzer erfolgreich erstellt.", "success");
+                        showToast("Benutzer erstellt. Bestätigungsmail wurde gesendet.", "success", 5000);
                         closeModal('createUserModal');
                         loadAdminUsers();
                     } catch (err) {
