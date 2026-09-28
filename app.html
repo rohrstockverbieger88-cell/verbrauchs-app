@@ -612,6 +612,12 @@
                             <input type="month" id="chartCustomEnd" onchange="renderDetailChart()"
                                 class="w-full sm:w-auto bg-gray-800 border border-gray-700 text-white text-sm rounded-lg p-2 outline-none">
                         </div>
+                        <div class="flex items-center justify-end mb-4 px-4">
+                            <label class="flex items-center gap-2 text-sm text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
+                                <input type="checkbox" id="toggleChartLabels" onchange="renderDetailChart()" class="rounded border-gray-700 bg-gray-800 text-primary-600 focus:ring-primary-500 w-4 h-4" checked>
+                                Werte am Balken anzeigen
+                            </label>
+                        </div>
                         <div class="relative flex-1 w-full h-full min-h-[300px]">
                             <canvas id="detailChart"></canvas>
                         </div>
@@ -632,7 +638,6 @@
                                     <tr>
                                         <th class="px-4 py-3">Datum</th>
                                         <th class="px-4 py-3 text-right">Stand</th>
-                                        <th class="px-4 py-3 text-center w-12"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="detailTableBody" class="divide-y divide-gray-800">
@@ -1148,10 +1153,11 @@
                         <textarea id="readingNote" rows="2" placeholder="Zusätzliche Infos..."
                             class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg p-2 outline-none focus:border-primary-500 text-sm"></textarea>
                     </div>
-                    <div class="pt-2 flex justify-end gap-3">
+                    <div class="pt-2 flex justify-end gap-3 flex-wrap">
+                        <button type="button" id="readingDeleteBtn" class="hidden px-4 py-2 text-sm font-medium text-red-400 hover:text-white bg-gray-800 hover:bg-red-600 rounded-lg transition-colors">Löschen</button>
                         <button type="button" onclick="closeModal('addReadingModal')" class="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white bg-gray-800 hover:bg-gray-700 rounded-lg">Abbrechen</button>
                         <button type="submit"
-                            class="w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-500 rounded-lg shadow-lg shadow-primary-500/20">Speichern</button>
+                            class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-500 rounded-lg shadow-lg shadow-primary-500/20">Speichern</button>
                     </div>
                 </form>
             </div>
@@ -2597,7 +2603,7 @@
             const data = appData.filter(d => d.categoryId === categoryId).sort((a, b) => new Date(a.date) - new Date(b.date));
             if (data.length < 2) return [];
 
-            let monthlyGrouped = {}; // key: "YYYY-MM", value: amount sum
+            let monthlyGrouped = {}; // key: "YYYY-MM", value: { amount, lastReadingId }
 
             for (let i = 1; i < data.length; i++) {
                 const prev = data[i - 1];
@@ -2611,8 +2617,11 @@
                 if (diff >= 0) {
                     const dateObj = new Date(curr.date);
                     const key = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
-                    if (!monthlyGrouped[key]) monthlyGrouped[key] = 0;
-                    monthlyGrouped[key] += diff;
+                    if (!monthlyGrouped[key]) {
+                        monthlyGrouped[key] = { amount: 0, lastReadingId: curr.id };
+                    }
+                    monthlyGrouped[key].amount += diff;
+                    monthlyGrouped[key].lastReadingId = curr.id;
                 }
             }
 
@@ -2623,7 +2632,8 @@
                     key: k,
                     year: parseInt(y),
                     month: parseInt(m) - 1,
-                    amount: monthlyGrouped[k]
+                    amount: monthlyGrouped[k].amount,
+                    lastReadingId: monthlyGrouped[k].lastReadingId
                 };
             }).sort((a, b) => a.key.localeCompare(b.key));
         }
@@ -2780,7 +2790,8 @@
                     }
 
                     const tr = document.createElement('tr');
-                    tr.className = `hover:bg-gray-800/30 transition-colors ${isChange ? 'bg-gray-800/10' : ''}`;
+                    tr.className = `cursor-pointer hover:bg-gray-800/50 transition-colors ${isChange ? 'bg-gray-800/10' : ''}`;
+                    tr.onclick = () => openEditReading(entry.id);
                     tr.innerHTML = `
                         <td class="px-4 py-3 whitespace-nowrap text-gray-300">
                             ${formatDate(entry.date)} ${infoBadge}
@@ -2788,14 +2799,6 @@
                         </td>
                         <td class="px-4 py-3 text-right font-mono font-medium ${isChange ? 'text-blue-300' : 'text-gray-100'} whitespace-nowrap">
                             ${entry.value.toFixed(3)} <span class="text-xs text-gray-500 font-sans">${cat.unit}</span>
-                        </td>
-                        <td class="px-4 py-3 text-center flex justify-end gap-1">
-                            <button onclick="openEditReading('${entry.id}')" class="text-gray-500 hover:text-blue-400 transition-colors p-1" title="Bearbeiten">
-                                <i data-lucide="edit-2" class="w-4 h-4"></i>
-                            </button>
-                            <button onclick="promptDeleteEntry('${entry.id}')" class="text-gray-500 hover:text-red-400 transition-colors p-1" title="Löschen">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -2866,6 +2869,15 @@
                 },
                 plugins: [ChartDataLabels],
                 options: {
+                    onClick: (e, activeElements) => {
+                        if (activeElements.length > 0) {
+                            const dataIndex = activeElements[0].index;
+                            const readingId = consumptions[dataIndex].lastReadingId;
+                            if (readingId) {
+                                openEditReading(readingId);
+                            }
+                        }
+                    },
                     responsive: true,
                     maintainAspectRatio: false,
                     layout: {
@@ -2880,6 +2892,7 @@
                             callbacks: { label: (ctx) => `${ctx.parsed.y.toFixed(1)} ${cat.unit}` }
                         },
                         datalabels: {
+                            display: document.getElementById('toggleChartLabels') ? document.getElementById('toggleChartLabels').checked : true,
                             anchor: 'end',
                             align: 'top',
                             color: '#9ca3af',
@@ -3208,6 +3221,7 @@
         function openAddReadingModal() {
             document.getElementById('addReadingForm').reset();
             document.getElementById('readingEntryId').value = '';
+            document.getElementById('readingDeleteBtn').classList.add('hidden');
             document.getElementById('readingDate').valueAsDate = new Date();
             const modal = document.getElementById('addReadingModal');
             modal.classList.remove('hidden'); modal.classList.add('flex');
@@ -3222,6 +3236,11 @@
             document.getElementById('readingValue').value = entry.value;
             document.getElementById('readingComment').value = entry.comment || '';
             document.getElementById('readingNote').value = entry.notes || '';
+            
+            const delBtn = document.getElementById('readingDeleteBtn');
+            delBtn.classList.remove('hidden');
+            delBtn.onclick = () => promptDeleteEntry(entry.id);
+
             const modal = document.getElementById('addReadingModal');
             modal.classList.remove('hidden'); modal.classList.add('flex');
         }
@@ -3291,6 +3310,7 @@
             appData = appData.filter(d => d.id !== id);
             fsDelData(id);
             closeConfirmModal();
+            closeModal('addReadingModal');
             renderView();
             showToast('Eintrag gelöscht', 'success');
         }
