@@ -2191,12 +2191,28 @@
             }
         }
 
+        async function wipeUserData(uid) {
+            const collections = ['categories', 'appData', 'notifications', 'objects'];
+            for (const col of collections) {
+                const snapshot = await db.collection('users').doc(uid).collection(col).get();
+                if (!snapshot.empty) {
+                    const batch = db.batch();
+                    snapshot.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                }
+            }
+            await db.collection('users').doc(uid).delete();
+        }
+
         async function deleteUserAccount(uid, email) {
-            if (confirm(`Soll der Nutzer ${email} wirklich aus der Datenbank-Liste gelöscht werden? (Hinweis: Den Login in Firebase Auth hast du bereits gelöscht)`)) {
+            if (confirm(`Achtung: Soll der Nutzer ${email} und ALLE seine Daten wirklich unwiderruflich aus der Datenbank gelöscht werden? (Hinweis: Den reinen Login-Account musst du in der Firebase Console unter 'Authentication' separat löschen)`)) {
                 try {
-                    // Hard-delete user document from Firestore to remove from UI list
-                    await db.collection('users').doc(uid).delete();
-                    showToast("Nutzer aus der Liste entfernt.", "success");
+                    const toast = showToast("Lösche alle Nutzerdaten...", "loading");
+                    await wipeUserData(uid);
+                    dismissToast(toast);
+                    showToast("Nutzer und alle Daten erfolgreich gelöscht.", "success");
                     loadAdminUsers();
                 } catch (e) {
                     showToast("Fehler: " + e.message, "error");

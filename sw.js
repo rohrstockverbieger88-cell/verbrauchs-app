@@ -1,7 +1,8 @@
-const CACHE_NAME = 'verbrauch-v59';
+const CACHE_NAME = 'verbrauch-v60';
 const urlsToCache = [
   './',
   './app.html',
+  './delete_account.html',
   './index.html',
   './faq.html',
   './impressum.html',

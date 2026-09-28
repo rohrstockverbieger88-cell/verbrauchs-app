@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="de" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Metraxo - Account löschen</title>
+    <link rel="icon" type="image/svg+xml" href="./icon.svg">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#60a5fa',
+                            500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a', 950: '#172554',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Outfit', sans-serif; background-color: #0F172A; color: #f8fafc; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center">
+        <i data-lucide="loader-2" class="w-12 h-12 text-primary-500 animate-spin mb-4"></i>
+        <p class="text-white text-lg">Wird geladen...</p>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 pointer-events-none max-w-sm w-full"></div>
+
+    <div class="glass-card w-full max-w-md rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden hidden" id="mainContainer">
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-rose-600"></div>
+        
+        <div class="flex items-center gap-3 justify-center mb-6">
+            <img src="./icon.svg" class="w-8 h-8">
+            <span class="font-bold text-2xl tracking-tight text-white">Metraxo</span>
+        </div>
+        
+        <h2 class="text-xl font-bold text-center mb-6 text-red-400">Account löschen</h2>
+
+        <!-- Step 1: Reason -->
+        <div id="step1">
+            <p class="text-slate-300 text-sm mb-4">Schade, dass du uns verlassen möchtest. Bitte teile uns kurz mit, warum du deinen Account löschen möchtest:</p>
+            
+            <div class="space-y-3 mb-6">
+                <label class="flex items-center gap-3 p-3 border border-slate-700 rounded-lg cursor-pointer hover:bg-slate-800 transition">
+                    <input type="radio" name="reason" value="Ich nutze die App nicht mehr" class="w-4 h-4 text-primary-500 focus:ring-primary-500 bg-slate-900 border-slate-700">
+                    <span class="text-sm">Ich nutze die App nicht mehr</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-slate-700 rounded-lg cursor-pointer hover:bg-slate-800 transition">
+                    <input type="radio" name="reason" value="Zu kompliziert" class="w-4 h-4 text-primary-500 focus:ring-primary-500 bg-slate-900 border-slate-700">
+                    <span class="text-sm">Die App ist mir zu kompliziert</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-slate-700 rounded-lg cursor-pointer hover:bg-slate-800 transition">
+                    <input type="radio" name="reason" value="Datenschutzbedenken" class="w-4 h-4 text-primary-500 focus:ring-primary-500 bg-slate-900 border-slate-700">
+                    <span class="text-sm">Datenschutzbedenken</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 border border-slate-700 rounded-lg cursor-pointer hover:bg-slate-800 transition">
+                    <input type="radio" name="reason" value="Sonstiges" class="w-4 h-4 text-primary-500 focus:ring-primary-500 bg-slate-900 border-slate-700" id="reasonOther">
+                    <span class="text-sm">Sonstiges</span>
+                </label>
+            </div>
+            
+            <div id="otherTextDiv" class="hidden mb-6">
+                <textarea id="otherText" rows="3" placeholder="Bitte beschreibe kurz, warum..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white text-sm focus:border-primary-500 outline-none"></textarea>
+            </div>
+            
+            <div class="flex gap-3 mt-8">
+                <button onclick="window.location.href='app.html'" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-lg font-medium transition-colors text-sm">Abbrechen</button>
+                <button onclick="goToStep2()" class="flex-1 bg-primary-600 hover:bg-primary-500 text-white py-3 rounded-lg font-medium transition-colors text-sm">Weiter</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Export -->
+        <div id="step2" class="hidden">
+            <div class="flex justify-center mb-4 text-primary-400">
+                <i data-lucide="download-cloud" class="w-12 h-12"></i>
+            </div>
+            <h3 class="text-lg font-bold text-center mb-2">Daten exportieren?</h3>
+            <p class="text-slate-300 text-sm mb-6 text-center">Wenn du deinen Account löschst, gehen alle deine eingetragenen Zählerstände unwiderruflich verloren. Möchtest du sie vorher als CSV-Datei exportieren?</p>
+            
+            <div class="space-y-3">
+                <button onclick="exportDataAndContinue()" class="w-full bg-primary-600 hover:bg-primary-500 text-white py-3 rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i> Jetzt exportieren
+                </button>
+                <button onclick="goToStep3()" class="w-full bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-lg font-medium transition-colors text-sm">Nein, weiter ohne Export</button>
+            </div>
+            
+            <div class="flex gap-3 mt-6 border-t border-slate-700 pt-6">
+                <button onclick="goToStep1()" class="flex-1 bg-transparent hover:bg-slate-800 text-slate-400 py-2 rounded-lg font-medium transition-colors text-sm">Zurück</button>
+                <button onclick="window.location.href='app.html'" class="flex-1 bg-transparent hover:bg-slate-800 text-slate-400 py-2 rounded-lg font-medium transition-colors text-sm">Abbrechen</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Final Confirm -->
+        <div id="step3" class="hidden">
+            <div class="flex justify-center mb-4 text-red-500">
+                <i data-lucide="alert-triangle" class="w-12 h-12"></i>
+            </div>
+            <h3 class="text-lg font-bold text-center mb-4">Achtung!</h3>
+            <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6">
+                <p class="text-red-400 text-sm text-center font-medium">Bist du sicher? Dein Account und alle deine Daten werden unwiderruflich gelöscht. Dies kann nicht rückgängig gemacht werden!</p>
+            </div>
+            
+            <div class="space-y-3">
+                <button onclick="deleteAccount()" id="finalDeleteBtn" class="w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-lg font-bold transition-colors text-sm flex items-center justify-center gap-2">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i> Account endgültig löschen
+                </button>
+            </div>
+            
+            <div class="flex gap-3 mt-6 border-t border-slate-700 pt-6">
+                <button onclick="goToStep2()" class="flex-1 bg-transparent hover:bg-slate-800 text-slate-400 py-2 rounded-lg font-medium transition-colors text-sm">Zurück</button>
+                <button onclick="window.location.href='app.html'" class="flex-1 bg-transparent hover:bg-slate-800 text-slate-400 py-2 rounded-lg font-medium transition-colors text-sm">Abbrechen</button>
+            </div>
+        </div>
+
+        <!-- Step 4: Success -->
+        <div id="step4" class="hidden">
+            <div class="flex justify-center mb-4 text-green-500">
+                <i data-lucide="check-circle" class="w-12 h-12"></i>
+            </div>
+            <h3 class="text-lg font-bold text-center mb-2">Account gelöscht</h3>
+            <p class="text-slate-300 text-sm mb-6 text-center">Dein Account und alle damit verbundenen Daten wurden erfolgreich und restlos aus unserem System entfernt.</p>
+            
+            <button onclick="window.location.href='index.html'" class="w-full bg-primary-600 hover:bg-primary-500 text-white py-3 rounded-lg font-medium transition-colors text-sm">
+                Zur Startseite
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Re-Auth Modal -->
+    <div id="reauthModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="glass-card w-full max-w-sm rounded-xl overflow-hidden shadow-2xl relative border-slate-700">
+            <div class="p-6">
+                <h3 class="text-lg font-bold text-white mb-2">Passwort bestätigen</h3>
+                <p class="text-sm text-slate-400 mb-4">Aus Sicherheitsgründen musst du dein Passwort erneut eingeben, um deinen Account endgültig zu löschen.</p>
+                
+                <input type="password" id="reauthPassword" placeholder="Dein Passwort" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:ring-1 focus:ring-primary-500 transition-colors mb-4">
+                
+                <div class="flex gap-3 mt-2">
+                    <button onclick="closeReauthModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg text-sm font-medium transition">Abbrechen</button>
+                    <button onclick="confirmReauth()" class="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg text-sm font-medium transition">Bestätigen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDJribCVmSvsCaszpKHTmbW7PlNU3Jz7j8",
+            authDomain: "verbrauchsueberwachung.firebaseapp.com",
+            projectId: "verbrauchsueberwachung",
+            storageBucket: "verbrauchsueberwachung.firebasestorage.app",
+            messagingSenderId: "879446316321",
+            appId: "1:879446316321:web:374a4cd06a08ecc7d55a60",
+            measurementId: "G-K5123RVYXG"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let currentUser = null;
+        let selectedReason = "";
+        let customReason = "";
+
+        // UI Helpers
+        function showToast(message, type = 'info', duration = 3000) {
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-lg shadow-lg text-sm font-medium flex items-center gap-3 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
+            
+            let icon = 'info';
+            if (type === 'success') { toast.classList.add('bg-green-500/90', 'text-white', 'backdrop-blur'); icon = 'check-circle'; }
+            else if (type === 'error') { toast.classList.add('bg-red-500/90', 'text-white', 'backdrop-blur'); icon = 'alert-circle'; }
+            else if (type === 'loading') { toast.classList.add('bg-slate-800/90', 'text-white', 'backdrop-blur'); icon = 'loader-2'; toast.querySelector('i')?.classList.add('animate-spin'); }
+            else { toast.classList.add('bg-slate-800/90', 'text-white', 'backdrop-blur'); }
+
+            toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5 shrink-0 ${type === 'loading' ? 'animate-spin' : ''}"></i><span>${message}</span>`;
+            document.getElementById('toastContainer').appendChild(toast);
+            lucide.createIcons({ root: toast });
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            if (duration > 0 && type !== 'loading') {
+                setTimeout(() => {
+                    dismissToast(toast);
+                }, duration);
+            }
+            return toast;
+        }
+
+        function dismissToast(toast) {
+            if(!toast) return;
+            toast.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 300);
+        }
+
+        // Auth state
+        auth.onAuthStateChanged((user) => {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            if (user) {
+                currentUser = user;
+                document.getElementById('mainContainer').classList.remove('hidden');
+            } else {
+                // If not logged in and not on success step, redirect
+                if (document.getElementById('step4').classList.contains('hidden')) {
+                    window.location.href = 'index.html';
+                }
+            }
+        });
+
+        // Reason logic
+        const radioBtns = document.querySelectorAll('input[name="reason"]');
+        radioBtns.forEach(btn => {
+            btn.addEventListener('change', (e) => {
+                if (e.target.id === 'reasonOther') {
+                    document.getElementById('otherTextDiv').classList.remove('hidden');
+                } else {
+                    document.getElementById('otherTextDiv').classList.add('hidden');
+                }
+            });
+        });
+
+        function goToStep1() {
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step1').classList.remove('hidden');
+        }
+
+        function goToStep2() {
+            const checked = document.querySelector('input[name="reason"]:checked');
+            if (!checked) {
+                return showToast("Bitte wähle einen Grund aus.", "error");
+            }
+            selectedReason = checked.value;
+            if (selectedReason === "Sonstiges") {
+                customReason = document.getElementById('otherText').value.trim();
+            }
+            document.getElementById('step1').classList.add('hidden');
+            document.getElementById('step2').classList.remove('hidden');
+        }
+
+        function goToStep3() {
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.remove('hidden');
+        }
+
+        async function exportDataAndContinue() {
+            const toast = showToast("Exportiere Daten...", "loading");
+            try {
+                // Fetch data for CSV
+                const snap = await db.collection('users').doc(currentUser.uid).collection('appData').orderBy('date', 'desc').get();
+                let csvContent = "Datum;Bereich;Zählernummer;Einheit;Stand;Kommentar;Notiz\\n";
+                
+                // We need category names to map IDs, fetch categories
+                const catSnap = await db.collection('users').doc(currentUser.uid).collection('categories').get();
+                const catMap = {};
+                catSnap.forEach(doc => {
+                    const c = doc.data();
+                    catMap[doc.id] = { name: c.name, unit: c.unit, number: c.meterNumber || '' };
+                });
+
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const cInfo = catMap[d.categoryId] || { name: 'Unbekannt', unit: '', number: '' };
+                    const dStr = new Date(d.date).toLocaleDateString('de-DE');
+                    const stand = d.value.toString().replace('.', ',');
+                    csvContent += `${dStr};"${cInfo.name}";"${cInfo.number}";"${cInfo.unit}";${stand};"";"${d.notes || ''}"\\n`;
+                });
+
+                // Trigger download
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", `Metraxo_Backup_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                dismissToast(toast);
+                showToast("Export erfolgreich!", "success");
+                
+                // Go to step 3 after slight delay
+                setTimeout(goToStep3, 1000);
+            } catch(e) {
+                dismissToast(toast);
+                showToast("Fehler beim Export: " + e.message, "error");
+            }
+        }
+
+        async function wipeUserData(uid) {
+            const collections = ['categories', 'appData', 'notifications', 'objects'];
+            for (const col of collections) {
+                const snapshot = await db.collection('users').doc(uid).collection(col).get();
+                if (!snapshot.empty) {
+                    const batch = db.batch();
+                    snapshot.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                }
+            }
+            await db.collection('users').doc(uid).delete();
+        }
+
+        async function deleteAccount() {
+            const btn = document.getElementById('finalDeleteBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Lösche...`;
+            lucide.createIcons();
+            const toast = showToast("Account wird gelöscht...", "loading");
+            
+            try {
+                // Save feedback if provided
+                if (selectedReason) {
+                    await db.collection('deletionFeedback').add({
+                        reason: selectedReason,
+                        customText: customReason,
+                        deletedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                // Delete all firestore data
+                await wipeUserData(currentUser.uid);
+                
+                // Finally, delete Auth user
+                await currentUser.delete();
+                
+                // Success!
+                dismissToast(toast);
+                document.getElementById('step3').classList.add('hidden');
+                document.getElementById('step4').classList.remove('hidden');
+                
+            } catch (error) {
+                dismissToast(toast);
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="trash-2" class="w-4 h-4"></i> Account endgültig löschen`;
+                lucide.createIcons();
+                
+                if (error.code === 'auth/requires-recent-login') {
+                    document.getElementById('reauthModal').classList.remove('hidden');
+                    document.getElementById('reauthModal').classList.add('flex');
+                    document.getElementById('reauthPassword').value = '';
+                    document.getElementById('reauthPassword').focus();
+                } else {
+                    showToast("Fehler: " + error.message, "error");
+                }
+            }
+        }
+
+        function closeReauthModal() {
+            document.getElementById('reauthModal').classList.add('hidden');
+            document.getElementById('reauthModal').classList.remove('flex');
+        }
+
+        async function confirmReauth() {
+            const pwd = document.getElementById('reauthPassword').value;
+            if (!pwd) return showToast("Bitte Passwort eingeben", "error");
+            
+            const credential = firebase.auth.EmailAuthProvider.credential(currentUser.email, pwd);
+            const toast = showToast("Authentifiziere...", "loading");
+            
+            try {
+                await currentUser.reauthenticateWithCredential(credential);
+                dismissToast(toast);
+                closeReauthModal();
+                // Try deleting again
+                deleteAccount();
+            } catch(e) {
+                dismissToast(toast);
+                showToast("Falsches Passwort", "error");
+            }
+        }
+    </script>
+</body>
+</html>
