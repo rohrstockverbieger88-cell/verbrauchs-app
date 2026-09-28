@@ -340,11 +340,15 @@
             try {
                 // Save feedback if provided
                 if (selectedReason) {
-                    await db.collection('deletionFeedback').add({
-                        reason: selectedReason,
-                        customText: customReason,
-                        deletedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    try {
+                        await db.collection('deletionFeedback').add({
+                            reason: selectedReason,
+                            customText: customReason,
+                            deletedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    } catch (fbErr) {
+                        console.warn("Feedback konnte wegen fehlender Berechtigung nicht gespeichert werden:", fbErr);
+                    }
                 }
 
                 // Delete all firestore data
