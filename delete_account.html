@@ -340,14 +340,35 @@
             try {
                 // Save feedback if provided
                 if (selectedReason) {
+                    const subject = "Account-Löschung: " + currentUser.email;
+                    const messageBody = `Ein Nutzer hat soeben seinen Account gelöscht.\\n\\nKunde: ${currentUser.email}\\nGrund: ${selectedReason}\\nDetails: ${customReason || '-'}`;
+                    
                     try {
-                        await db.collection('deletionFeedback').add({
-                            reason: selectedReason,
-                            customText: customReason,
-                            deletedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        // 1. Send Email via Vercel API
+                        fetch('/api/contact', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                firstName: 'System', 
+                                lastName: '', 
+                                email: currentUser.email, 
+                                subject: subject, 
+                                message: messageBody 
+                            })
+                        }).catch(e => console.error("Email API Error:", e));
+
+                        // 2. Save to Admin Inbox
+                        await db.collection('messages').add({
+                            senderEmail: currentUser.email,
+                            senderName: "Account-Löschung",
+                            subject: subject,
+                            message: messageBody,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                            read: false,
+                            type: 'contact'
                         });
                     } catch (fbErr) {
-                        console.warn("Feedback konnte wegen fehlender Berechtigung nicht gespeichert werden:", fbErr);
+                        console.warn("Feedback konnte nicht verarbeitet werden:", fbErr);
                     }
                 }
 
